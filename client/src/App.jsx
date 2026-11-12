@@ -1,121 +1,156 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { Eye, EyeOff, GraduationCap, LogOut, ShieldAlert } from 'lucide-react'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const roleRoutes = { mahasiswa: '/mahasiswa', staf: '/staf', admin: '/admin' }
+  const [identifier, setIdentifier] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [errors, setErrors] = useState({})
+  const [notice, setNotice] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user'))
+    } catch {
+      return null
+    }
+  })
+
+  const validate = () => {
+    const nextErrors = {}
+    if (!identifier.trim()) nextErrors.identifier = 'NIM/NIP atau email wajib diisi.'
+    if (!password) nextErrors.password = 'Kata sandi wajib diisi.'
+    setErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setNotice(null)
+    if (!validate()) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: identifier.trim(), password }),
+      })
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'NIM/NIP/email atau kata sandi salah.')
+      }
+
+      localStorage.setItem('token', result.data.token)
+      localStorage.setItem('user', JSON.stringify(result.data))
+      window.history.pushState({}, '', roleRoutes[result.data.role] || '/dashboard')
+      setUser(result.data)
+      setErrors({})
+    } catch (error) {
+      setNotice({ type: 'error', message: error.message || 'Server tidak dapat dihubungi.' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
+    setPassword('')
+  }
+
+  if (user) {
+    const roleName = user.role === 'staf' ? 'Staf Akademik' : user.role
+    const roleDescription = user.role === 'staf'
+      ? 'Kelola dan verifikasi layanan akademik mahasiswa dari dashboard staf.'
+      : 'Akses layanan kemahasiswaan sesuai hak akses akun Anda.'
+
+    return (
+      <main className="dashboard-page">
+        <section className="dashboard-shell">
+          <div className="brand-row">
+            <div className="brand-mark"><GraduationCap size={19} /></div>
+            <div>
+              <strong>Layanan Kemahasiswaan FTI</strong>
+              <span>Universitas Andalas - Padang</span>
+            </div>
+          </div>
+          <div className="dashboard-content">
+            <span className="eyebrow">Dashboard {roleName}</span>
+            <h1>Selamat datang, {user.nama || user.identifier}</h1>
+            <p>{roleDescription}</p>
+            <button type="button" className="logout-button" onClick={handleLogout}>
+              <LogOut size={16} /> Keluar
+            </button>
+          </div>
+        </section>
+      </main>
+    )
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <main className="login-page">
+      <section className="login-card">
+        <div className="brand-row">
+          <div className="brand-mark"><GraduationCap size={19} /></div>
+          <div>
+            <strong>Layanan Kemahasiswaan FTI</strong>
+            <span>Universitas Andalas - Padang</span>
+          </div>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+        <div className="divider" />
+        <header className="login-heading">
+          <h1>Masuk ke Layanan<br />Kemahasiswaan FTI</h1>
+          <p>Gunakan akun Anda untuk mengajukan dan memantau surat akademik.</p>
+        </header>
+
+        {notice && <div className="notice error"><ShieldAlert size={16} /><span>{notice.message}</span></div>}
+
+        <form onSubmit={handleSubmit} noValidate>
+          <label htmlFor="identifier">NIM / NIP / Email</label>
+          <input
+            id="identifier"
+            type="text"
+            value={identifier}
+            onChange={(event) => { setIdentifier(event.target.value); setErrors((current) => ({ ...current, identifier: '' })) }}
+            placeholder="Masukkan NIM, NIP, atau email"
+            aria-invalid={Boolean(errors.identifier)}
+            autoComplete="username"
+          />
+          {errors.identifier && <small className="field-error">{errors.identifier}</small>}
+
+          <div className="password-field">
+            <label htmlFor="password">Kata Sandi</label>
+            <div className="password-input">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => { setPassword(event.target.value); setErrors((current) => ({ ...current, password: '' })) }}
+                placeholder="Masukkan kata sandi"
+                aria-invalid={Boolean(errors.password)}
+                autoComplete="current-password"
+              />
+              <button type="button" className="icon-button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {errors.password && <small className="field-error">{errors.password}</small>}
+          </div>
+
+          <button type="submit" className="login-button" disabled={isLoading}>
+            {isLoading ? 'Memproses...' : 'Masuk'}
+          </button>
+        </form>
+        <button type="button" className="forgot-button" onClick={() => setNotice({ type: 'info', message: 'Silakan hubungi Staf Akademik untuk mereset kata sandi.' })}>Lupa kata sandi?</button>
       </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <p className="help-text">Logo fakultas masih mengganti - Hubungi Staf Akademik untuk bantuan.</p>
+      <footer>Fakultas Teknologi Informasi, Universitas Andalas<br /><span>© 2026 - Seluruh hak cipta dilindungi.</span></footer>
+    </main>
   )
 }
 
