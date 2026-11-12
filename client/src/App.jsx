@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff, GraduationCap, LogOut, ShieldAlert } from 'lucide-react'
+import { Bell, ChevronDown, ChevronRight, Clock3, Eye, EyeOff, FilePlus2, FileText, GraduationCap, LogOut, Menu, Upload, UserRound, X } from 'lucide-react'
 import './App.css'
 
 function App() {
@@ -10,6 +10,7 @@ function App() {
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('user'))
@@ -64,30 +65,57 @@ function App() {
   }
 
   if (user) {
-    const roleName = user.role === 'staf' ? 'Staf Akademik' : user.role
-    const roleDescription = user.role === 'staf'
-      ? 'Kelola dan verifikasi layanan akademik mahasiswa dari dashboard staf.'
-      : 'Akses layanan kemahasiswaan sesuai hak akses akun Anda.'
+    const services = [
+      { title: 'Surat Keterangan Aktif Kuliah', description: 'Keterangan status aktif untuk keperluan administrasi.' },
+      { title: 'Beasiswa', description: 'Dokumen pendukung pengajuan bantuan pendidikan.' },
+      { title: 'Penurunan UKT', description: 'Permohonan penyesuaian biaya kuliah Anda.' },
+      { title: 'Pengembalian UKT', description: 'Permohonan pengembalian pembayaran UKT.' },
+      { title: 'Pengunduran Diri', description: 'Pengajuan pengunduran diri dari perkuliahan.' },
+    ]
+    const submissions = [
+      { id: 'PGJ-2026-00123', title: 'Surat Keterangan Aktif Kuliah', date: '22 Oktober 2026', status: 'Diproses', tone: 'purple' },
+      { id: 'PGJ-2026-00119', title: 'Beasiswa', date: '21 Oktober 2026', status: 'Perlu Perbaikan', tone: 'orange' },
+      { id: 'PGJ-2026-00110', title: 'Surat Keterangan Aktif Kuliah', date: '19 Oktober 2026', status: 'Selesai', tone: 'green' },
+    ]
 
     return (
       <main className="dashboard-page">
-        <section className="dashboard-shell">
-          <div className="brand-row">
-            <div className="brand-mark"><GraduationCap size={19} /></div>
-            <div>
-              <strong>Layanan Kemahasiswaan FTI</strong>
-              <span>Universitas Andalas - Padang</span>
+        <header className="dashboard-header">
+          <div className="dashboard-header-inner">
+            <div className="brand-row">
+              <div className="brand-mark"><GraduationCap size={18} /></div>
+              <div><strong>Layanan Kemahasiswaan FTI</strong><span>Universitas Andalas</span></div>
+            </div>
+            <button type="button" className="mobile-menu-button" onClick={() => setMenuOpen((open) => !open)} aria-label="Buka menu">
+              {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+            <nav className={menuOpen ? 'dashboard-nav is-open' : 'dashboard-nav'}>
+              <a className="active" href="#beranda">Beranda</a>
+              <a href="#layanan">Ajukan Layanan</a>
+              <a href="#pengajuan">Riwayat</a>
+              <a href="#profil">Profil</a>
+            </nav>
+            <div className="account-actions">
+              <button type="button" className="header-icon" aria-label="Notifikasi"><Bell size={16} /></button>
+              <button type="button" className="account-button" id="profil"><span className="avatar">{(user.nama || 'A').charAt(0)}</span><span className="account-name">{user.nama || 'Ahmad Iqbal'}</span><ChevronDown size={14} /></button>
+              <button type="button" className="header-logout" onClick={handleLogout}><LogOut size={15} /> Keluar</button>
             </div>
           </div>
-          <div className="dashboard-content">
-            <span className="eyebrow">Dashboard {roleName}</span>
-            <h1>Selamat datang, {user.nama || user.identifier}</h1>
-            <p>{roleDescription}</p>
-            <button type="button" className="logout-button" onClick={handleLogout}>
-              <LogOut size={16} /> Keluar
-            </button>
-          </div>
-        </section>
+        </header>
+        <div className="dashboard-main" id="beranda">
+          <div className="breadcrumb">Layanan Kemahasiswaan FTI / Mahasiswa</div>
+          <div className="welcome-row"><div><h1>Halo, {user.nama || 'Ahmad Iqbal'}!</h1><p>Pantau pengajuan surat akademik Anda · Ganjil 2026/2027</p></div><button type="button" className="primary-button"><FilePlus2 size={16} /> Ajukan Layanan Baru</button></div>
+          <section className="stats-grid" aria-label="Ringkasan pengajuan">
+            <StatCard label="Sedang Diproses" value="3" icon={<Clock3 size={15} />} />
+            <StatCard label="Perlu Perbaikan" value="1" icon={<Clock3 size={15} />} warning />
+            <StatCard label="Selesai" value="1" icon={<Clock3 size={15} />} />
+            <StatCard label="Total Pengajuan" value="5" icon={<Clock3 size={15} />} />
+          </section>
+          <section className="notice-panel"><span className="section-kicker">Perlu Perbaikan</span><div className="repair-alert"><span className="alert-mark">!</span><div><strong>Perlu Perbaikan</strong><p>Pengajuan Anda memerlukan perbaikan dokumen.</p></div></div><button type="button" className="outline-button">Perbaiki Sekarang</button></section>
+          <section className="dashboard-section" id="pengajuan"><div className="section-heading"><h2>Pengajuan Terbaru</h2></div><div className="submission-list">{submissions.map((submission) => <article className="submission-item" key={submission.id}><span className={`status-pill ${submission.tone}`}><span />{submission.status}</span><small>{submission.id}</small><h3>{submission.title}</h3><p>{submission.date} · {user.nama || 'Ahmad Iqbal'}</p><div className="item-footer"><button type="button" className="small-button">{submission.status === 'Selesai' ? 'Unduh Surat' : 'Lihat Detail'} <ChevronRight size={14} /></button></div></article>)}</div></section>
+          <section className="dashboard-section" id="layanan"><div className="section-heading"><h2>Layanan Tersedia</h2></div><div className="service-list">{services.map((service) => <article className="service-item" key={service.title}><div className="service-icon"><FileText size={17} /></div><div className="service-copy"><h3>{service.title}</h3><p>{service.description}</p></div><span className="audience">Mahasiswa</span><button type="button" className="service-button">Ajukan</button></article>)}</div></section>
+        </div>
+        <footer className="dashboard-footer">Fakultas Teknologi Informasi, Universitas Andalas<br /><span>© 2026 · Seluruh hak cipta dilindungi.</span></footer>
       </main>
     )
   }
@@ -152,6 +180,10 @@ function App() {
       <footer>Fakultas Teknologi Informasi, Universitas Andalas<br /><span>© 2026 - Seluruh hak cipta dilindungi.</span></footer>
     </main>
   )
+}
+
+function StatCard({ label, value, icon, warning = false }) {
+  return <article className={`stat-card${warning ? ' warning' : ''}`}><span>{label}</span><div className="stat-icon">{icon}</div><strong>{value}</strong><h3>{label}</h3><p>{label === 'Total Pengajuan' ? 'Semua pengajuan Anda.' : `${label} pengajuan Anda.`}</p></article>
 }
 
 export default App
