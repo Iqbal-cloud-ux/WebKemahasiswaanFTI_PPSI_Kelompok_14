@@ -1,10 +1,41 @@
 import { AlertCircle, ArrowRight, Bell, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Download, Eye, EyeOff, FilePlus2, FileText, GraduationCap, LockKeyhole, LogOut, Menu, MoreHorizontal, Search, ShieldAlert, Upload, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { StaffDashboard } from './StaffPages.jsx'
 import './App.css'
 
+// Alamat beranda tiap peran (pola rute mengikuti docs/alur-layar.md).
+const ROLE_ROUTES = {
+  mahasiswa: '/mahasiswa',
+  staf: '/staf',
+  'kepala-kantor': '/kepala-kantor',
+  'wakil-dekan': '/wakil-dekan',
+  dekan: '/dekan',
+}
+const ROLE_LABELS = {
+  mahasiswa: 'Mahasiswa',
+  staf: 'Staf Akademik',
+  'kepala-kantor': 'Kepala Kantor',
+  'wakil-dekan': 'Wakil Dekan',
+  dekan: 'Dekan',
+}
+// Nilai kolom users.role di database: ENUM('mahasiswa','staf','kakor','wadek1','dekan').
+const DB_ROLES = {
+  mahasiswa: 'mahasiswa',
+  staf: 'staf',
+  kakor: 'kepala-kantor',
+  wadek1: 'wakil-dekan',
+  dekan: 'dekan',
+}
+const normalizeRole = (role) => DB_ROLES[role] || null
+
+// Sesi berakhir setelah 30 menit tanpa aktivitas (docs). Token server juga berlaku 30 menit
+// dan diperpanjang paling sering tiap 5 menit selama pengguna aktif.
+const SESSION_IDLE_MS = 30 * 60 * 1000
+const SESSION_REFRESH_MS = 5 * 60 * 1000
+const ACTIVITY_EVENTS = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart']
+const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token') || ''}` })
+
 function App() {
-  const roleRoutes = { mahasiswa: '/mahasiswa', staf: '/staf', admin: '/admin' }
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -44,12 +75,79 @@ function App() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [visiblePasswords, setVisiblePasswords] = useState({ current: false, new: false, confirm: false })
 
+  // Samakan alamat di peramban dengan peran: belum login selalu ke "/" (Login),
+  // sudah login ke beranda perannya. Tampilan ditentukan oleh peran, bukan oleh URL.
   useEffect(() => {
-    if (window.location.pathname === '/login/staf') {
-      const destination = user?.role === 'staf' ? '/staf' : user?.role === 'mahasiswa' ? '/mahasiswa' : '/'
-      window.history.replaceState({}, '', destination)
+    const home = user ? ROLE_ROUTES[normalizeRole(user.role)] || '/' : '/'
+    if (window.location.pathname !== home) {
+      window.history.replaceState({}, '', home + (user ? window.location.hash : ''))
     }
   }, [user])
+
+  // Akhiri sesi di peramban (token dihapus) dan kembali ke halaman Login.
+  const endSession = useCallback((message = null) => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
+    setPassword('')
+    setMenuOpen(false)
+    setActiveView('home')
+    setNotice(message ? { type: 'error', message } : null)
+  }, [])
+
+  // Periksa sesi ke server saat halaman dibuka. Bila token tidak berlaku lagi (401), keluarkan pengguna.
+  const isLoggedIn = Boolean(user)
+  useEffect(() => {
+    if (!isLoggedIn) return undefined
+    let active = true
+    fetch('/api/auth/me', { headers: authHeader() })
+      .then((response) => {
+        if (active && response.status === 401) endSession('Sesi Anda sudah berakhir. Silakan masuk kembali.')
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [isLoggedIn, endSession])
+
+  // Selama pengguna aktif, perpanjang token. Setelah 30 menit tanpa aktivitas, keluar otomatis.
+  const lastActivityRef = useRef(0)
+  const lastRefreshRef = useRef(0)
+  useEffect(() => {
+    if (!isLoggedIn) return undefined
+    lastActivityRef.current = Date.now()
+    lastRefreshRef.current = Date.now()
+
+    const refreshSession = () => {
+      lastRefreshRef.current = Date.now()
+      fetch('/api/auth/refresh', { method: 'POST', headers: authHeader() })
+        .then(async (response) => {
+          if (response.status === 401) {
+            endSession('Sesi Anda sudah berakhir. Silakan masuk kembali.')
+            return
+          }
+          const result = await response.json().catch(() => null)
+          if (response.ok && result?.data?.token) localStorage.setItem('token', result.data.token)
+        })
+        .catch(() => {})
+    }
+
+    const handleActivity = () => {
+      const now = Date.now()
+      lastActivityRef.current = now
+      if (now - lastRefreshRef.current >= SESSION_REFRESH_MS) refreshSession()
+    }
+
+    const idleTimer = window.setInterval(() => {
+      if (Date.now() - lastActivityRef.current >= SESSION_IDLE_MS) {
+        endSession('Sesi berakhir karena tidak ada aktivitas selama 30 menit. Silakan masuk kembali.')
+      }
+    }, 60 * 1000)
+
+    ACTIVITY_EVENTS.forEach((name) => window.addEventListener(name, handleActivity, { passive: true }))
+    return () => {
+      window.clearInterval(idleTimer)
+      ACTIVITY_EVENTS.forEach((name) => window.removeEventListener(name, handleActivity))
+    }
+  }, [isLoggedIn, endSession])
 
   const validate = () => {
     const nextErrors = {}
@@ -71,29 +169,32 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: identifier.trim(), password }),
       })
-      const result = await response.json()
+      const result = await response.json().catch(() => null)
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'NIM/NIP/email atau kata sandi salah.')
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Server tidak dapat dihubungi. Coba lagi beberapa saat lagi.')
       }
 
-      localStorage.setItem('token', result.data.token)
-      localStorage.setItem('user', JSON.stringify(result.data))
-      window.history.pushState({}, '', roleRoutes[result.data.role] || '/dashboard')
-      setUser(result.data)
+      // Token disimpan terpisah agar bisa diperpanjang tanpa mengubah data profil.
+      const { token, ...profile } = result.data
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(profile))
+      window.history.pushState({}, '', ROLE_ROUTES[normalizeRole(profile.role)] || '/')
+      setActiveView('home')
+      setUser(profile)
       setErrors({})
     } catch (error) {
-      setNotice({ type: 'error', message: error.message || 'Server tidak dapat dihubungi.' })
+      const message = error instanceof TypeError ? 'Server tidak dapat dihubungi. Coba lagi beberapa saat lagi.' : error.message
+      setNotice({ type: 'error', message })
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Beri tahu server (untuk log_aktivitas), lalu hapus sesi di peramban tanpa menunggu balasan.
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
-    setPassword('')
+    fetch('/api/auth/logout', { method: 'POST', headers: authHeader(), keepalive: true }).catch(() => {})
+    endSession()
   }
 
   const services = [
@@ -189,8 +290,11 @@ function App() {
     setConfirmPassword('')
   }
 
-  if (window.location.pathname === '/staf') return <StaffDashboard user={user} />
-  if (user?.role === 'staf') return <StaffDashboard user={user} />
+  const role = normalizeRole(user?.role)
+  if (user && role === 'staf') return <StaffDashboard user={user} onLogout={handleLogout} />
+  if (user && role !== 'mahasiswa') {
+    return <RolePendingPage user={user} roleLabel={ROLE_LABELS[role]} onLogout={handleLogout} />
+  }
 
   if (user) {
     const submissions = [
@@ -255,6 +359,8 @@ function App() {
               <a className={activeView === 'apply' ? 'active' : ''} href="#pengajuan" onClick={(event) => { event.preventDefault(); openApplication() }}>Ajukan Layanan</a>
               <a className={activeView === 'history' ? 'active' : ''} href="#riwayat" onClick={(event) => { event.preventDefault(); openHistory() }}>Riwayat</a>
               <a className={activeView === 'profile' ? 'active' : ''} href="#profil" onClick={(event) => { event.preventDefault(); openProfile() }}>Profil</a>
+              <a className={`mobile-only${activeView === 'notifications' ? ' active' : ''}`} href="#notifikasi" onClick={(event) => { event.preventDefault(); openNotifications() }}>Notifikasi</a>
+              <button type="button" className="mobile-only nav-logout" onClick={handleLogout}><LogOut size={15} /> Keluar</button>
             </nav>
             <div className="account-actions">
               <button type="button" className={`header-icon${activeView === 'notifications' ? ' active' : ''}`} onClick={openNotifications} aria-label={`Notifikasi${notifications.filter((notification) => !readNotifications.includes(notification.id)).length ? `, ${notifications.filter((notification) => !readNotifications.includes(notification.id)).length} belum dibaca` : ''}`}><Bell size={16} />{notifications.some((notification) => !readNotifications.includes(notification.id)) && <span className="notification-indicator" />}</button>
@@ -423,6 +529,28 @@ function StatCard({ label, value, icon, warning = false }) {
   return <article className={`stat-card${warning ? ' warning' : ''}`}><span>{label}</span><div className="stat-icon">{icon}</div><strong>{value}</strong><h3>{label}</h3><p>{label === 'Total Pengajuan' ? 'Semua pengajuan Anda.' : `${label} pengajuan Anda.`}</p></article>
 }
 
+// Peran yang halamannya belum dibuat (Kepala Kantor, Wakil Dekan, Dekan) atau peran tidak dikenali.
+function RolePendingPage({ user, roleLabel, onLogout }) {
+  return (
+    <main className="login-page">
+      <section className="login-card">
+        <div className="brand-row">
+          <div className="brand-mark"><GraduationCap size={19} /></div>
+          <div><strong>Layanan Kemahasiswaan FTI</strong><span>Universitas Andalas - Padang</span></div>
+        </div>
+        <div className="divider" />
+        <header className="login-heading">
+          <h1>{roleLabel ? `Halaman ${roleLabel} belum tersedia` : 'Peran akun tidak dikenali'}</h1>
+          <p>{roleLabel
+            ? `Anda masuk sebagai ${user.nama || roleLabel}. Halaman untuk peran ini masih dalam pengembangan.`
+            : 'Akun Anda belum memiliki peran yang valid. Hubungi Staf Akademik untuk memperbaiki data akun.'}</p>
+        </header>
+        <button type="button" className="login-button" onClick={onLogout}>Keluar</button>
+      </section>
+    </main>
+  )
+}
+
 function SubmissionFlow({ user, services, selectedService, selectedServiceData, submissionStep, submissionData, submissionResult, setSubmissionStep, setSelectedService, updateSubmission, uploadDocument, submitApplication, onCancel }) {
   const canContinue = submissionStep === 1 ? Boolean(selectedService) : Boolean(submissionData.purpose.trim() && submissionData.phone.trim())
   const goToNextStep = () => {
@@ -456,7 +584,7 @@ function SubmissionFlow({ user, services, selectedService, selectedServiceData, 
           <>
             {submissionStep === 1 && <section className="flow-card"><div className="flow-card-heading"><h2>Pilih layanan yang ingin diajukan</h2><p>Pilih salah satu layanan untuk melanjutkan pengajuan.</p></div><div className="service-choice-list">{services.map((service) => <button type="button" className={`service-choice${selectedService === service.title ? ' selected' : ''}`} key={service.title} onClick={() => setSelectedService(service.title)}><span className="service-icon"><FileText size={17} /></span><span><strong>{service.title}</strong><small>{service.description}</small></span><span className="choice-radio" /></button>)}</div></section>}
             {submissionStep === 2 && <section className="form-flow-grid"><div className="flow-card"><h2>Data pengajuan</h2><label htmlFor="purpose">Keperluan Surat *</label><textarea id="purpose" value={submissionData.purpose} onChange={(event) => updateSubmission('purpose', event.target.value)} placeholder="Contoh: Administrasi beasiswa" /><label htmlFor="phone">Nomor Telepon/WhatsApp *</label><input id="phone" value={submissionData.phone} onChange={(event) => updateSubmission('phone', event.target.value)} placeholder="08xxxxxxxxxx" /></div><div className="flow-card"><h2>Dokumen wajib</h2><p className="muted-copy">Format PDF/JPG/PNG, maksimal 5 MB.</p>{selectedServiceData.documents.map((document) => <div className={`document-upload${submissionData.files[document] ? ' uploaded' : ''}`} key={document}><div><strong>{document} *</strong>{submissionData.files[document] ? <small>{submissionData.files[document]}</small> : <small>Belum diunggah</small>}</div><label className="upload-button"><Upload size={14} /> {submissionData.files[document] ? 'Ganti berkas' : 'Pilih berkas'}<input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => uploadDocument(document, event.target.files[0])} /></label></div>)}</div></section>}
-            {submissionStep === 3 && <section className="flow-card review-card"><h2>Periksa kembali pengajuan Anda</h2><div className="review-row"><span>Layanan</span><strong>{selectedService}</strong></div><div className="review-row"><span>Nama</span><strong>{user.nama || 'Mahasiswa'}</strong></div><div className="review-row"><span>NIM</span><strong>{user.nim || '9900000001'}</strong></div><div className="review-row"><span>Keperluan</span><strong>{submissionData.purpose}</strong></div><h3>Dokumen terunggah</h3>{selectedServiceData.documents.map((document) => <div className="review-document" key={document}><CheckCircle2 size={15} />{document}<span>{submissionData.files[document] || 'Belum diunggah'}</span></div>)}<label className="confirmation"><input type="checkbox" checked={submissionData.confirmation} onChange={(event) => updateSubmission('confirmation', event.target.checked)} /> Saya menyatakan data dan dokumen yang diunggah sudah benar.</label>{submissionResult && <div className="flow-error"><AlertCircle size={15} />{submissionResult.message}</div>}</section>}
+            {submissionStep === 3 && <section className="flow-card review-card"><h2>Periksa kembali pengajuan Anda</h2><div className="review-row"><span>Layanan</span><strong>{selectedService}</strong></div><div className="review-row"><span>Nama</span><strong>{user.nama || 'Mahasiswa'}</strong></div><div className="review-row"><span>NIM</span><strong>{user.nim || user.identifier || '-'}</strong></div><div className="review-row"><span>Keperluan</span><strong>{submissionData.purpose}</strong></div><h3>Dokumen terunggah</h3>{selectedServiceData.documents.map((document) => <div className="review-document" key={document}><CheckCircle2 size={15} />{document}<span>{submissionData.files[document] || 'Belum diunggah'}</span></div>)}<label className="confirmation"><input type="checkbox" checked={submissionData.confirmation} onChange={(event) => updateSubmission('confirmation', event.target.checked)} /> Saya menyatakan data dan dokumen yang diunggah sudah benar.</label>{submissionResult && <div className="flow-error"><AlertCircle size={15} />{submissionResult.message}</div>}</section>}
             {submissionResult && <div className="flow-error"><AlertCircle size={15} />{submissionResult.message}</div>}
             <div className="flow-actions"><button type="button" className="outline-button" onClick={submissionStep === 1 ? onCancel : () => setSubmissionStep((step) => step - 1)}>{submissionStep === 1 ? 'Kembali ke Dashboard' : 'Kembali'}</button>{submissionStep < 3 ? <button type="button" className="primary-button" disabled={!canContinue} onClick={goToNextStep}>Lanjut <ChevronRight size={15} /></button> : <button type="button" className="primary-button" onClick={submitApplication}>Kirim Pengajuan <ChevronRight size={15} /></button>}</div>
           </>

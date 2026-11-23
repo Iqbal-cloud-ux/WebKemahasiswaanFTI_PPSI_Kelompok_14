@@ -510,128 +510,87 @@
   .staff-report-distribution h2 { grid-column: auto; }
   .staff-report-status-legend { max-width: 230px; }
 }
-@media print {
-  .staff-profile-heading { margin-bottom: 13px; }
-  .staff-profile-title h1 { margin: 0; color: #172033; font-size: 25px; letter-spacing: -.4px; }
-  .staff-profile-title p { margin: 6px 0 18px; color: #64727e; font-size: 11px; }
-  .staff-profile-feedback { align-items: center; margin: 0 0 13px; }
-  .staff-profile-feedback button { display: grid; place-items: center; margin-left: auto; border: 0; color: inherit; background: transparent; cursor: pointer; }
-  .staff-profile-summary { min-height: 104px; display: grid; grid-template-columns: 48px minmax(200px, 1fr) auto; align-items: center; gap: 12px; margin-bottom: 14px; padding: 15px 24px; border: 1px solid #dfe7ec; border-radius: 7px; background: #fff; }
-  .staff-profile-avatar { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; color: #126d3a; background: #dcf8e6; font-size: 12px; font-weight: 800; }
-  .staff-profile-summary-main h2 { margin: 0; color: #172033; font-size: 16px; }
-  .staff-profile-summary-main p { margin: 7px 0 0; color: #64727e; font-size: 9px; }
-  .staff-profile-summary-meta { display: grid; justify-items: end; gap: 8px; color: #71818c; font-size: 8px; }
-  .staff-profile-summary-meta small { color: #526170; font-size: 8px; }
-  .staff-profile-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 14px; }
-  .staff-profile-card { min-height: 340px; }
-  .staff-profile-card h2 { font-size: 12px; }
-  .staff-profile-card > p { margin: 9px 0 14px; color: #64727e; font-size: 9px; line-height: 1.5; }
-  .staff-profile-card form { display: grid; gap: 10px; }
-  .staff-profile-readonly, .staff-profile-input { display: grid; gap: 7px; color: #344252; font-size: 9px; font-weight: 700; }
-  .staff-profile-readonly > span:nth-child(2) { position: relative; display: block; }
-  .staff-profile-readonly input, .staff-profile-input input { width: 100%; height: 40px; border: 1px solid #dfe7ec; border-radius: 5px; color: #526170; background: #fff; font-size: 10px; }
-  .staff-profile-readonly input { padding: 0 38px 0 12px; background: #fbfcfd; }
-  .staff-profile-input input { padding: 0 12px; }
-  .staff-profile-readonly > span:nth-child(2) svg { position: absolute; top: 12px; right: 12px; color: #71818c; }
-  .staff-profile-readonly small { min-height: 11px; color: #71818c; font-size: 8px; font-weight: 400; }
-  .staff-profile-save { width: 145px; height: 36px; margin-top: 3px; border: 0; border-radius: 5px; color: #fff; background: #126d3a; font-size: 9px; font-weight: 700; cursor: pointer; }
-  .staff-profile-save:hover { background: #0c5d2f; }
-  .staff-profile-password-card form { gap: 11px; }
-  .staff-profile-password-field { display: grid; gap: 7px; color: #344252; font-size: 9px; font-weight: 700; }
-  .staff-profile-password-field b { color: #344252; }
-  .staff-profile-password-field > span:nth-child(2) { position: relative; display: block; }
-  .staff-profile-password-field input { width: 100%; height: 40px; padding: 0 38px 0 12px; border: 1px solid #dfe7ec; border-radius: 5px; outline: 0; color: #526170; background: #fff; font-size: 10px; }
-  .staff-profile-password-field input:focus, .staff-profile-input input:focus { border-color: #55a979; box-shadow: 0 0 0 2px #e6f5eb; }
-  .staff-profile-password-field button { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; display: grid; place-items: center; border: 0; color: #71818c; background: transparent; cursor: pointer; }
-  .staff-profile-password-save { width: 130px; height: 36px; border: 1px solid #4d6d5a; border-radius: 5px; color: #344252; background: #fff; font-size: 9px; font-weight: 700; cursor: pointer; }
-  .staff-profile-password-save:hover { border-color: #126d3a; color: #126d3a; background: #effaf3; }
-  .staff-profile-popover button { margin-top: 8px; }
-  .staff-profile-popover .staff-profile-logout { color: #a52e32; }
-  @media (max-width: 720px) {
-    .staff-profile-summary { grid-template-columns: 48px minmax(0, 1fr); padding: 15px; }
-    .staff-profile-summary-meta { grid-column: 1 / -1; justify-items: start; padding-top: 4px; }
-    .staff-profile-layout { grid-template-columns: 1fr; }
-  }
-  .staff-review-heading h1 { margin: 10px 0 9px; color: #172033; font-size: 25px; letter-spacing: -.4px; }
-  .staff-review-meta { display: flex; align-items: center; gap: 8px; min-height: 25px; color: #71818c; font-size: 9px; }
-  .staff-review-meta > strong { color: #344252; }
-  .staff-review-meta > button { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; border: 0; color: #526170; background: transparent; font-size: 9px; cursor: pointer; }
-  .staff-review-status { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border: 1px solid #b7e0ff; border-radius: 12px; color: #2d67b8; background: #eef7ff; }
-  .staff-review-feedback { align-items: center; margin: 12px 0; }
-  .staff-review-feedback button { display: grid; place-items: center; margin-left: auto; border: 0; color: inherit; background: transparent; cursor: pointer; }
-  .staff-review-layout { display: grid; grid-template-columns: minmax(0, 1fr) 245px; align-items: start; gap: 12px; margin-top: 11px; }
-  .staff-review-main { display: grid; gap: 12px; }
-  .staff-review-applicant h2, .staff-review-documents h2, .staff-review-checklist h2, .staff-review-timeline h2 { margin: 0; color: #172033; font-size: 12px; }
-  .staff-review-applicant-grid dl { margin: 11px 0 0; padding: 11px 12px; border: 1px solid #edf0f2; border-radius: 5px; background: #fbfcfd; }
-  .staff-review-applicant-grid dl div { min-height: 23px; display: grid; grid-template-columns: 145px 1fr; align-items: center; }
-  .staff-review-applicant-grid dt, .staff-review-applicant-grid dd { margin: 0; font-size: 9px; }
-  .staff-review-applicant-grid dt { color: #71818c; }
-  .staff-review-applicant-grid dd { color: #344252; }
-  .staff-review-documents-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-  .staff-review-documents-heading p { margin: 5px 0 0; color: #71818c; font-size: 8px; }
-  .staff-review-documents-heading button { display: inline-flex; align-items: center; gap: 5px; border: 0; color: #526170; background: transparent; font-size: 8px; cursor: pointer; }
-  .staff-review-refresh-mark { color: #16763f; font-size: 13px; }
-  .staff-review-document { margin-bottom: 9px; padding: 10px 10px 9px; border: 1px solid #edf0f2; border-radius: 6px; background: #fbfcfd; }
-  .staff-review-document-name { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 7px; }
-  .staff-review-file-icon { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; color: #16763f; background: #e9f9ef; }
-  .staff-review-document-name strong, .staff-review-document-name small { display: block; }
-  .staff-review-document-name strong { color: #344252; font-size: 9px; }
-  .staff-review-document-name small { margin-top: 3px; color: #71818c; font-size: 8px; }
-  .staff-review-document-name > span:last-child { color: #71818c; font-size: 8px; }
-  .staff-review-document-actions { display: grid; grid-template-columns: 115px 1fr; gap: 7px 10px; margin-top: 9px; }
-  .staff-review-document-note { padding: 7px 8px; border: 1px solid #edf0f2; border-radius: 4px; color: #526170; background: #fff; font-size: 8px; }
-  .staff-review-document-note small { display: block; margin-top: 4px; color: #71818c; font-size: 7px; }
-  .staff-review-radio-group { display: flex; align-items: center; gap: 12px; }
-  .staff-review-radio-group label { display: inline-flex; align-items: center; gap: 5px; color: #526170; font-size: 8px; cursor: pointer; }
-  .staff-review-radio-group input { width: 13px; height: 13px; accent-color: #16763f; }
-  .staff-review-document-note-field { grid-column: 1 / -1; display: grid; gap: 5px; color: #71818c; font-size: 8px; }
-  .staff-review-document-note-field input { width: 100%; height: 34px; padding: 0 9px; border: 1px solid #dfe7ec; border-radius: 4px; color: #526170; background: #fff; font-size: 8px; }
-  .staff-review-decision-note { display: grid; gap: 6px; margin-top: 9px; color: #71818c; font-size: 8px; }
-  .staff-review-decision-note textarea { min-height: 58px; resize: vertical; padding: 8px 9px; border: 1px solid #dfe7ec; border-radius: 5px; outline: 0; color: #526170; background: #fff; font: inherit; font-size: 8px; }
-  .staff-review-decision-note textarea:focus { border-color: #55a979; box-shadow: 0 0 0 2px #e6f5eb; }
-  .staff-review-aside { display: grid; gap: 12px; }
-  .staff-review-checklist strong { display: block; margin: 11px 0 8px; color: #344252; font-size: 10px; }
-  .staff-review-checklist ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
-  .staff-review-checklist li { position: relative; padding-left: 13px; color: #526170; font-size: 8px; line-height: 1.45; }
-  .staff-review-checklist li::before { content: '✓'; position: absolute; left: 0; color: #16763f; font-weight: 800; }
-  .staff-review-checklist button { display: inline-flex; align-items: center; gap: 5px; min-height: 31px; margin-top: 12px; padding: 0 9px; border: 1px solid #55a979; border-radius: 5px; color: #126d3a; background: #fff; font-size: 8px; font-weight: 700; cursor: pointer; }
-  .staff-review-timeline ol { display: grid; gap: 0; margin: 11px 0 0; padding: 0; list-style: none; }
-  .staff-review-timeline li { position: relative; min-height: 63px; display: grid; grid-template-columns: 20px 1fr; gap: 7px; color: #71818c; }
-  .staff-review-timeline li::after { content: ''; position: absolute; top: 18px; bottom: 1px; left: 9px; width: 1px; background: #dfe7ec; }
-  .staff-review-timeline li:last-child::after { display: none; }
-  .staff-review-timeline li > span { position: relative; z-index: 1; width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid #dfe7ec; border-radius: 50%; background: #fff; }
-  .staff-review-timeline li.done > span { border-color: #16763f; color: #16763f; background: #effaf3; }
-  .staff-review-timeline li.current > span { border-color: #16763f; color: #16763f; }
-  .staff-review-timeline li strong { color: #526170; font-size: 8px; }
-  .staff-review-timeline li.done strong { color: #344252; }
-  .staff-review-timeline li p { margin: 4px 0 3px; font-size: 8px; line-height: 1.45; }
-  .staff-review-timeline li small { color: #87949d; font-size: 7px; }
-  .staff-review-actions { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px 15px; border: 1px solid #dfe7ec; border-radius: 7px; background: #fff; }
-  .staff-review-actions p { margin: 0; color: #526170; font-size: 8px; }
-  .staff-review-actions > div { display: flex; gap: 8px; }
-  .staff-review-actions button { height: 34px; padding: 0 12px; border-radius: 5px; font-size: 8px; font-weight: 700; cursor: pointer; }
-  .staff-review-reject { border: 1px solid #cf7777; color: #b42318; background: #fff; }
-  .staff-review-correction { border: 1px solid #16763f; color: #16763f; background: #fff; }
-  .staff-review-verify { border: 1px solid #16763f; color: #fff; background: #16763f; }
-  @media (max-width: 1000px) {
-    .staff-review-layout { grid-template-columns: minmax(0, 1fr) 220px; }
-  }
-  @media (max-width: 720px) {
-    .staff-review-heading h1 { font-size: 22px; }
-    .staff-review-meta { flex-wrap: wrap; }
-    .staff-review-meta > button { margin-left: 0; }
-    .staff-review-layout { grid-template-columns: 1fr; }
-    .staff-review-aside { grid-row: 1; }
-    .staff-review-actions { align-items: flex-start; flex-direction: column; }
-    .staff-review-actions > div { width: 100%; }
-    .staff-review-actions button { flex: 1; }
-  }
-  @media (max-width: 480px) {
-    .staff-review-document-actions { grid-template-columns: 1fr; }
-    .staff-review-radio-group { flex-wrap: wrap; }
-    .staff-review-actions > div { display: grid; grid-template-columns: 1fr; }
-    .staff-review-actions button { width: 100%; }
-  }
+.staff-profile-popover button { margin-top: 8px; }
+.staff-profile-popover .staff-profile-logout { color: #a52e32; }
+.staff-review-heading h1 { margin: 10px 0 9px; color: #172033; font-size: 25px; letter-spacing: -.4px; }
+.staff-review-meta { display: flex; align-items: center; gap: 8px; min-height: 25px; color: #71818c; font-size: 9px; }
+.staff-review-meta > strong { color: #344252; }
+.staff-review-meta > button { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; border: 0; color: #526170; background: transparent; font-size: 9px; cursor: pointer; }
+.staff-review-status { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border: 1px solid #b7e0ff; border-radius: 12px; color: #2d67b8; background: #eef7ff; }
+.staff-review-feedback { align-items: center; margin: 12px 0; }
+.staff-review-feedback button { display: grid; place-items: center; margin-left: auto; border: 0; color: inherit; background: transparent; cursor: pointer; }
+.staff-review-layout { display: grid; grid-template-columns: minmax(0, 1fr) 245px; align-items: start; gap: 12px; margin-top: 11px; }
+.staff-review-main { display: grid; gap: 12px; }
+.staff-review-applicant h2, .staff-review-documents h2, .staff-review-checklist h2, .staff-review-timeline h2 { margin: 0; color: #172033; font-size: 12px; }
+.staff-review-applicant-grid dl { margin: 11px 0 0; padding: 11px 12px; border: 1px solid #edf0f2; border-radius: 5px; background: #fbfcfd; }
+.staff-review-applicant-grid dl div { min-height: 23px; display: grid; grid-template-columns: 145px 1fr; align-items: center; }
+.staff-review-applicant-grid dt, .staff-review-applicant-grid dd { margin: 0; font-size: 9px; }
+.staff-review-applicant-grid dt { color: #71818c; }
+.staff-review-applicant-grid dd { color: #344252; }
+.staff-review-documents-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.staff-review-documents-heading p { margin: 5px 0 0; color: #71818c; font-size: 8px; }
+.staff-review-documents-heading button { display: inline-flex; align-items: center; gap: 5px; border: 0; color: #526170; background: transparent; font-size: 8px; cursor: pointer; }
+.staff-review-refresh-mark { color: #16763f; font-size: 13px; }
+.staff-review-document { margin-bottom: 9px; padding: 10px 10px 9px; border: 1px solid #edf0f2; border-radius: 6px; background: #fbfcfd; }
+.staff-review-document-name { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 7px; }
+.staff-review-file-icon { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; color: #16763f; background: #e9f9ef; }
+.staff-review-document-name strong, .staff-review-document-name small { display: block; }
+.staff-review-document-name strong { color: #344252; font-size: 9px; }
+.staff-review-document-name small { margin-top: 3px; color: #71818c; font-size: 8px; }
+.staff-review-document-name > span:last-child { color: #71818c; font-size: 8px; }
+.staff-review-document-actions { display: grid; grid-template-columns: 115px 1fr; gap: 7px 10px; margin-top: 9px; }
+.staff-review-document-note { padding: 7px 8px; border: 1px solid #edf0f2; border-radius: 4px; color: #526170; background: #fff; font-size: 8px; }
+.staff-review-document-note small { display: block; margin-top: 4px; color: #71818c; font-size: 7px; }
+.staff-review-radio-group { display: flex; align-items: center; gap: 12px; }
+.staff-review-radio-group label { display: inline-flex; align-items: center; gap: 5px; color: #526170; font-size: 8px; cursor: pointer; }
+.staff-review-radio-group input { width: 13px; height: 13px; accent-color: #16763f; }
+.staff-review-document-note-field { grid-column: 1 / -1; display: grid; gap: 5px; color: #71818c; font-size: 8px; }
+.staff-review-document-note-field input { width: 100%; height: 34px; padding: 0 9px; border: 1px solid #dfe7ec; border-radius: 4px; color: #526170; background: #fff; font-size: 8px; }
+.staff-review-decision-note { display: grid; gap: 6px; margin-top: 9px; color: #71818c; font-size: 8px; }
+.staff-review-decision-note textarea { min-height: 58px; resize: vertical; padding: 8px 9px; border: 1px solid #dfe7ec; border-radius: 5px; outline: 0; color: #526170; background: #fff; font: inherit; font-size: 8px; }
+.staff-review-decision-note textarea:focus { border-color: #55a979; box-shadow: 0 0 0 2px #e6f5eb; }
+.staff-review-aside { display: grid; gap: 12px; }
+.staff-review-checklist strong { display: block; margin: 11px 0 8px; color: #344252; font-size: 10px; }
+.staff-review-checklist ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.staff-review-checklist li { position: relative; padding-left: 13px; color: #526170; font-size: 8px; line-height: 1.45; }
+.staff-review-checklist li::before { content: '✓'; position: absolute; left: 0; color: #16763f; font-weight: 800; }
+.staff-review-checklist button { display: inline-flex; align-items: center; gap: 5px; min-height: 31px; margin-top: 12px; padding: 0 9px; border: 1px solid #55a979; border-radius: 5px; color: #126d3a; background: #fff; font-size: 8px; font-weight: 700; cursor: pointer; }
+.staff-review-timeline ol { display: grid; gap: 0; margin: 11px 0 0; padding: 0; list-style: none; }
+.staff-review-timeline li { position: relative; min-height: 63px; display: grid; grid-template-columns: 20px 1fr; gap: 7px; color: #71818c; }
+.staff-review-timeline li::after { content: ''; position: absolute; top: 18px; bottom: 1px; left: 9px; width: 1px; background: #dfe7ec; }
+.staff-review-timeline li:last-child::after { display: none; }
+.staff-review-timeline li > span { position: relative; z-index: 1; width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid #dfe7ec; border-radius: 50%; background: #fff; }
+.staff-review-timeline li.done > span { border-color: #16763f; color: #16763f; background: #effaf3; }
+.staff-review-timeline li.current > span { border-color: #16763f; color: #16763f; }
+.staff-review-timeline li strong { color: #526170; font-size: 8px; }
+.staff-review-timeline li.done strong { color: #344252; }
+.staff-review-timeline li p { margin: 4px 0 3px; font-size: 8px; line-height: 1.45; }
+.staff-review-timeline li small { color: #87949d; font-size: 7px; }
+.staff-review-actions { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px 15px; border: 1px solid #dfe7ec; border-radius: 7px; background: #fff; }
+.staff-review-actions p { margin: 0; color: #526170; font-size: 8px; }
+.staff-review-actions > div { display: flex; gap: 8px; }
+.staff-review-actions button { height: 34px; padding: 0 12px; border-radius: 5px; font-size: 8px; font-weight: 700; cursor: pointer; }
+.staff-review-reject { border: 1px solid #cf7777; color: #b42318; background: #fff; }
+.staff-review-correction { border: 1px solid #16763f; color: #16763f; background: #fff; }
+.staff-review-verify { border: 1px solid #16763f; color: #fff; background: #16763f; }
+@media (max-width: 1000px) {
+  .staff-review-layout { grid-template-columns: minmax(0, 1fr) 220px; }
+}
+@media (max-width: 720px) {
+  .staff-review-heading h1 { font-size: 22px; }
+  .staff-review-meta { flex-wrap: wrap; }
+  .staff-review-meta > button { margin-left: 0; }
+  .staff-review-layout { grid-template-columns: 1fr; }
+  .staff-review-aside { grid-row: 1; }
+  .staff-review-actions { align-items: flex-start; flex-direction: column; }
+  .staff-review-actions > div { width: 100%; }
+  .staff-review-actions button { flex: 1; }
+}
+@media (max-width: 480px) {
+  .staff-review-document-actions { grid-template-columns: 1fr; }
+  .staff-review-radio-group { flex-wrap: wrap; }
+  .staff-review-actions > div { display: grid; grid-template-columns: 1fr; }
+  .staff-review-actions button { width: 100%; }
 }
 @media print {
   .staff-report-print-page { min-height: auto !important; background: #fff !important; }

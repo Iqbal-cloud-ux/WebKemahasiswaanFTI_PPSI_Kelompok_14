@@ -152,7 +152,7 @@ const initialReportRecords = reportServiceSeeds.flatMap((service, serviceIndex) 
   return { ...record, dateValue: `2026-10-${String(day).padStart(2, '0')}` }
 })
 
-function StaffReviewPage({ submission, staffName, onClose }) {
+function StaffReviewPage({ submission, onClose }) {
   const [documents, setDocuments] = useState({
     krs: 'sesuai',
     ktm: 'sesuai',
@@ -208,8 +208,8 @@ function StaffReviewPage({ submission, staffName, onClose }) {
             <div className="staff-review-applicant-grid">
               <dl>
                 <div><dt>Identitas akademik</dt><dd /></div>
-                <div><dt>Nama</dt><dd>{submission?.name || 'Budi Santoso'}</dd></div>
-                <div><dt>NIM</dt><dd>{submission?.nim || '9900000001'}</dd></div>
+                <div><dt>Nama</dt><dd>{submission?.name || '-'}</dd></div>
+                <div><dt>NIM</dt><dd>{submission?.nim || '-'}</dd></div>
                 <div><dt>Program Studi</dt><dd>Sistem Informasi</dd></div>
                 <div><dt>Semester</dt><dd>Ganjil 2026/2027</dd></div>
               </dl>
@@ -1273,7 +1273,7 @@ function StaffReportsPage() {
 
 function StaffProfilePage({ user, staffName, initials }) {
   const [email, setEmail] = useState(user?.email || 'staff.akademik@fti.unand.ac.id')
-  const [phone, setPhone] = useState(user?.no_hp || '0812 6600 2028')
+  const [phone, setPhone] = useState(user?.no_hp || '0812 0000 0000')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -1390,7 +1390,7 @@ function StaffProfilePage({ user, staffName, initials }) {
   )
 }
 
-export function StaffDashboard({ user }) {
+export function StaffDashboard({ user, onLogout }) {
   const [access, setAccess] = useState({ status: 'checking', message: '' })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -1437,11 +1437,7 @@ export function StaffDashboard({ user }) {
     }
   }, [])
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    window.location.assign('/')
-  }
+  const logout = onLogout
 
   const staffName = user?.nama || 'Staf Akademik Contoh'
   const initials = staffName.split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase()
@@ -1516,7 +1512,7 @@ export function StaffDashboard({ user }) {
           {access.status === 'denied' && (
             <div className="staff-access-card">
               <div className="staff-notice error" role="alert"><ShieldAlert size={17} /><span>{access.message}</span></div>
-              <a className="staff-login-button staff-access-link" href="/">Kembali ke Login</a>
+              <button type="button" className="staff-login-button staff-access-link" onClick={logout}>Kembali ke Login</button>
             </div>
           )}
           {access.status === 'authorized' && (
@@ -1527,7 +1523,7 @@ export function StaffDashboard({ user }) {
               {menuNotice && <div className="staff-notice info" role="status">{menuNotice}<button type="button" onClick={() => setMenuNotice('')} aria-label="Tutup pesan"><X size={15} /></button></div>}
 
               {selectedSubmission ? (
-                <StaffReviewPage submission={selectedSubmission} staffName={staffName} onClose={() => setSelectedSubmission(null)} />
+                <StaffReviewPage submission={selectedSubmission} onClose={() => setSelectedSubmission(null)} />
               ) : activePage === 'Beranda' ? (
                 <>
                   <section className="staff-stats-grid" aria-label="Ringkasan layanan">
