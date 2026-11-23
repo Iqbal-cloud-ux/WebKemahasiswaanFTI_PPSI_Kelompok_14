@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.*
+!.env.example
+server/uploads/letters/*
+server/uploads/requirements/*
+!server/uploads/letters/.gitkeep
+!server/uploads/requirements/.gitkeep
