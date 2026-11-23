@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ShieldAlert } from 'lucide-react'
+import { ErrorBoundary } from '../../components/ErrorBoundary.jsx'
+import { TidakDitemukanPage } from '../galat/TidakDitemukanPage.jsx'
 import { StaffLayout } from '../../layouts/StaffLayout.jsx'
 import { checkStaffAccess } from '../../services/api.js'
 import { ArsipSuratPage } from './ArsipSuratPage.jsx'
@@ -11,22 +14,32 @@ import { PeriksaPengajuanPage } from './PeriksaPengajuanPage.jsx'
 import { ProfilStafPage } from './ProfilStafPage.jsx'
 import { RekapPage } from './RekapPage.jsx'
 
-// Portal staf: memeriksa hak akses ke server, lalu menampilkan halaman sesuai menu.
-// Untuk menambah halaman staf: buat file di folder ini, lalu daftarkan di PAGES.
-const PAGES = {
-  'Daftar Pengajuan': ({ openReview, selectedSubmission, closeReview }) => <DaftarPengajuanPage onReview={openReview} selectedSubmission={selectedSubmission} onCloseReview={closeReview} />,
-  'Draf Surat': () => <DrafSuratPage />,
-  'Arsip Surat': () => <ArsipSuratPage />,
-  'Jenis Layanan & Template': () => <LayananTemplatePage />,
-  'Rekapitulasi & Laporan': () => <RekapPage />,
-  Profil: ({ user, staffName, initials }) => <ProfilStafPage user={user} staffName={staffName} initials={initials} />,
+// Alamat tiap menu staf; kuncinya = label menu di layouts/StaffLayout.jsx.
+// Nama rute [BELUM FINAL], mengikuti pola /staf/...
+const PAGE_PATHS = {
+  Beranda: '/staf',
+  'Daftar Pengajuan': '/staf/pengajuan',
+  'Draf Surat': '/staf/draf-surat',
+  'Arsip Surat': '/staf/arsip-surat',
+  'Jenis Layanan & Template': '/staf/layanan-template',
+  'Rekapitulasi & Laporan': '/staf/rekap',
+  Profil: '/staf/profil',
 }
 
+const pageFromPath = (pathname) => {
+  const path = pathname.replace(/\/+$/, '')
+  return Object.keys(PAGE_PATHS).find((label) => PAGE_PATHS[label] === path) || null
+}
+
+// Portal staf: memeriksa hak akses ke server, lalu menampilkan halaman sesuai alamat.
+// Untuk menambah halaman staf: buat file di folder ini, tambahkan di PAGE_PATHS,
+// NAVIGATION (layouts/StaffLayout.jsx), dan <Route> di bawah.
 export function StafPortal({ user, onLogout }) {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [access, setAccess] = useState({ status: 'checking', message: '' })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState(null)
-  const [activePage, setActivePage] = useState('Beranda')
 
   useEffect(() => {
     let active = true
@@ -49,6 +62,7 @@ export function StafPortal({ user, onLogout }) {
     return () => { active = false }
   }, [])
 
+  const activePage = pageFromPath(location.pathname)
   const staffName = user?.nama || 'Staf Akademik Contoh'
   const initials = staffName.split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase()
   const today = new Intl.DateTimeFormat('id-ID', {
@@ -60,11 +74,10 @@ export function StafPortal({ user, onLogout }) {
 
   const openPage = (label) => {
     setSidebarOpen(false)
-    setActivePage(label)
     setSelectedSubmission(null)
+    if (location.pathname !== PAGE_PATHS[label]) navigate(PAGE_PATHS[label])
   }
   const closeReview = () => setSelectedSubmission(null)
-  const renderPage = PAGES[activePage]
 
   return (
     <StaffLayout
@@ -84,16 +97,26 @@ export function StafPortal({ user, onLogout }) {
         </div>
       )}
       {access.status === 'authorized' && (
-        <>
+        <ErrorBoundary resetKey={`${location.key}:${selectedSubmission?.id || ''}`}>
           {activePage === 'Beranda' && <div className="staff-breadcrumb">Layanan Kemahasiswaan FTI <span>/</span> Beranda</div>}
           {activePage === 'Beranda' && <div className="staff-dashboard-heading"><h1>Beranda</h1><p>{today} · Ringkasan layanan dan pekerjaan yang perlu Anda tindak lanjuti.</p></div>}
 
+          {/* Periksa pengajuan tampil menimpa halaman aktif (dari Beranda atau Daftar Pengajuan). */}
           {selectedSubmission ? (
             <PeriksaPengajuanPage submission={selectedSubmission} onClose={closeReview} />
-          ) : activePage === 'Beranda' ? (
-            <BerandaStafPage onReview={setSelectedSubmission} />
-          ) : renderPage({ user, staffName, initials, openReview: setSelectedSubmission, selectedSubmission, closeReview })}
-        </>
+          ) : (
+            <Routes>
+              <Route index element={<BerandaStafPage onReview={setSelectedSubmission} />} />
+              <Route path="pengajuan" element={<DaftarPengajuanPage onReview={setSelectedSubmission} selectedSubmission={selectedSubmission} onCloseReview={closeReview} />} />
+              <Route path="draf-surat" element={<DrafSuratPage />} />
+              <Route path="arsip-surat" element={<ArsipSuratPage />} />
+              <Route path="layanan-template" element={<LayananTemplatePage />} />
+              <Route path="rekap" element={<RekapPage />} />
+              <Route path="profil" element={<ProfilStafPage user={user} staffName={staffName} initials={initials} />} />
+              <Route path="*" element={<TidakDitemukanPage dalamPortal beranda={PAGE_PATHS.Beranda} />} />
+            </Routes>
+          )}
+        </ErrorBoundary>
       )}
     </StaffLayout>
   )

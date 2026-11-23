@@ -81,11 +81,12 @@ Monorepo dengan dua aplikasi terpisah:
 ```
 client/   Frontend: Vite + React (JavaScript, bukan TypeScript)
   src/
-    App.jsx                 hanya memilih portal sesuai peran (jangan menaruh halaman di sini)
-    main.jsx                titik masuk + impor CSS (urutan impor CSS penting)
+    App.jsx                 daftar rute per peran (React Router); jangan menaruh halaman di sini
+    main.jsx                titik masuk, BrowserRouter, impor CSS (urutan impor CSS penting)
     pages/auth/             LoginPage.jsx + login.css
-    pages/mahasiswa/        MahasiswaPortal.jsx (menu + state bersama) dan satu file per halaman
-    pages/staf/             StafPortal.jsx (cek akses + menu) dan satu file per halaman
+    pages/mahasiswa/        MahasiswaPortal.jsx (rute /mahasiswa/... + state bersama) dan satu file per halaman
+    pages/staf/             StafPortal.jsx (cek akses + rute /staf/...) dan satu file per halaman
+    pages/galat/            AksesDitolakPage.jsx (403) dan TidakDitemukanPage.jsx (404)
     pages/PeranBelumTersediaPage.jsx  sementara untuk kakor, wadek1, dekan
     layouts/                StudentLayout.jsx, StaffLayout.jsx (sidebar + bar atas) + portal.css
     hooks/useSession.js     login, logout, perpanjangan dan berakhirnya sesi
@@ -93,7 +94,9 @@ client/   Frontend: Vite + React (JavaScript, bukan TypeScript)
     utils/roles.js          nilai peran dan rute beranda tiap peran
     data/                   data contoh (palsu) sampai halaman tersambung ke server
     styles/dasar.css        gaya dasar elemen HTML
-    components/ context/    untuk komponen dan context bersama (belum dipakai)
+    components/             komponen bersama: PenjagaPeran.jsx (belum login -> Login, peran lain -> 403),
+                            ErrorBoundary.jsx (penangkap galat tampilan), KartuPesan.jsx
+    context/                untuk context bersama (belum dipakai)
   vite.config.js  eslint.config.js  index.html  package.json
 server/   Backend: Node.js + Express (REST API)
   src/

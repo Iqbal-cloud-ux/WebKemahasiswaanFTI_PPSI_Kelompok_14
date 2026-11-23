@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { logoutRequest, refreshRequest, sessionCheckRequest } from '../services/api.js'
-import { homeRouteFor } from '../utils/roles.js'
 
 // Sesi berakhir setelah 30 menit tanpa aktivitas (docs). Token server juga berlaku 30 menit
 // dan diperpanjang paling sering tiap 5 menit selama pengguna aktif.
@@ -18,6 +18,7 @@ const loadStoredUser = () => {
 
 // Menyimpan data login, memeriksa sesi ke server, dan mengakhiri sesi bila perlu.
 export function useSession() {
+  const navigate = useNavigate()
   const [user, setUser] = useState(loadStoredUser)
   const [sessionMessage, setSessionMessage] = useState(null)
   const isLoggedIn = Boolean(user)
@@ -29,15 +30,6 @@ export function useSession() {
     setSessionMessage(message)
     setUser(null)
   }, [])
-
-  // Samakan alamat di peramban dengan peran: belum login selalu ke "/" (Login),
-  // sudah login ke beranda perannya. Tampilan ditentukan oleh peran, bukan oleh URL.
-  useEffect(() => {
-    const home = homeRouteFor(user)
-    if (window.location.pathname !== home) {
-      window.history.replaceState({}, '', home + (user ? window.location.hash : ''))
-    }
-  }, [user])
 
   // Periksa sesi ke server saat halaman dibuka. Bila token tidak berlaku lagi (401), keluarkan pengguna.
   useEffect(() => {
@@ -97,14 +89,17 @@ export function useSession() {
     // Token disimpan terpisah agar bisa diperpanjang tanpa mengubah data profil.
     localStorage.setItem('token', token)
     localStorage.setItem('user', JSON.stringify(profile))
-    window.history.pushState({}, '', homeRouteFor(profile))
+    // Pindah halaman diatur App.jsx: setelah user terisi, "/" dialihkan ke beranda peran.
     setSessionMessage(null)
     setUser(profile)
   }
 
   // Beri tahu server (untuk log_aktivitas), lalu hapus sesi di peramban tanpa menunggu balasan.
+  // Keluar sendiri langsung ke Login tanpa mengingat halaman terakhir (beda dengan sesi berakhir,
+  // yang mengingat halaman agar pengguna bisa melanjutkan setelah login lagi).
   const logout = () => {
     logoutRequest().catch(() => {})
+    navigate('/', { replace: true })
     endSession()
   }
 

@@ -1,4 +1,5 @@
 /* Gaya dasar untuk elemen HTML (berlaku di semua halaman). */
+html, body, #root { min-height: 100%; margin: 0; }
 :root { color: #172033; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
 * { box-sizing: border-box; }
 button, input { font: inherit; }

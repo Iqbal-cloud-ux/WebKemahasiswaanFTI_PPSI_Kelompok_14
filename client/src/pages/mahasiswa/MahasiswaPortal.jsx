@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { ErrorBoundary } from '../../components/ErrorBoundary.jsx'
+import { TidakDitemukanPage } from '../galat/TidakDitemukanPage.jsx'
 import { StudentLayout } from '../../layouts/StudentLayout.jsx'
 import { buatPengajuanContoh, notifications, notifikasiAwalDibaca } from '../../data/contohMahasiswa.js'
 import { BerandaMahasiswaPage } from './BerandaMahasiswaPage.jsx'
@@ -7,39 +10,41 @@ import { PengajuanPage } from './PengajuanPage.jsx'
 import { ProfilMahasiswaPage } from './ProfilMahasiswaPage.jsx'
 import { RiwayatPage } from './RiwayatPage.jsx'
 
-// Alamat (hash) tiap menu mahasiswa.
-const VIEW_URLS = {
+// Alamat tiap menu mahasiswa (nama rute [BELUM FINAL], mengikuti pola /mahasiswa/...).
+const VIEW_PATHS = {
   home: '/mahasiswa',
-  apply: '/mahasiswa#pengajuan',
-  history: '/mahasiswa#riwayat',
-  notifications: '/mahasiswa#notifikasi',
-  profile: '/mahasiswa#profil',
+  apply: '/mahasiswa/pengajuan',
+  history: '/mahasiswa/riwayat',
+  notifications: '/mahasiswa/notifikasi',
+  profile: '/mahasiswa/profil',
 }
 
-// Portal mahasiswa: memilih halaman yang tampil dan menyimpan state yang dipakai lintas halaman.
-// Untuk menambah halaman mahasiswa: buat file di folder ini, tambahkan di VIEW_URLS, NAVIGATION
-// (layouts/StudentLayout.jsx), dan di bagian render di bawah.
+const viewFromPath = (pathname) => {
+  const path = pathname.replace(/\/+$/, '')
+  return Object.keys(VIEW_PATHS).find((view) => VIEW_PATHS[view] === path) || null
+}
+
+// Portal mahasiswa: rute halaman mahasiswa dan state yang dipakai lintas halaman.
+// Untuk menambah halaman mahasiswa: buat file di folder ini, tambahkan di VIEW_PATHS,
+// NAVIGATION (layouts/StudentLayout.jsx), dan <Route> di bawah.
 export function MahasiswaPortal({ user, onUpdateUser, onLogout }) {
-  const [activeView, setActiveView] = useState('home')
+  const location = useLocation()
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [readNotifications, setReadNotifications] = useState(notifikasiAwalDibaca)
   const [selectedSubmissionId, setSelectedSubmissionId] = useState('')
-  const [application, setApplication] = useState({ service: '', key: 0 })
 
+  const activeView = viewFromPath(location.pathname)
   const submissions = buatPengajuanContoh(user)
   const unreadCount = notifications.filter((notification) => !readNotifications.includes(notification.id)).length
 
-  const openView = (view) => {
-    setActiveView(view)
+  const openView = (view, state) => {
     setMenuOpen(false)
-    window.history.pushState({}, '', VIEW_URLS[view])
+    navigate(VIEW_PATHS[view], { state })
   }
 
-  // Selalu mulai formulir baru (key berubah = formulir dibuat ulang dari awal).
-  const openApplication = (serviceTitle = '') => {
-    setApplication((current) => ({ service: serviceTitle, key: current.key + 1 }))
-    openView('apply')
-  }
+  // Layanan yang dipilih di Beranda dibawa lewat state navigasi.
+  const openApplication = (serviceTitle = '') => openView('apply', { service: serviceTitle })
 
   const openSubmission = (submissionId) => {
     setSelectedSubmissionId(submissionId)
@@ -56,11 +61,17 @@ export function MahasiswaPortal({ user, onUpdateUser, onLogout }) {
       onNavigate={(view) => (view === 'apply' ? openApplication() : openView(view))}
       onLogout={onLogout}
     >
-      {activeView === 'apply' && <PengajuanPage key={application.key} user={user} initialService={application.service} onCancel={() => openView('home')} />}
-      {activeView === 'history' && <RiwayatPage submissions={submissions} selectedSubmissionId={selectedSubmissionId} setSelectedSubmissionId={setSelectedSubmissionId} />}
-      {activeView === 'notifications' && <NotifikasiPage readNotifications={readNotifications} setReadNotifications={setReadNotifications} onOpenSubmission={openSubmission} />}
-      {activeView === 'profile' && <ProfilMahasiswaPage user={user} onUpdateUser={onUpdateUser} />}
-      {activeView === 'home' && <BerandaMahasiswaPage user={user} submissions={submissions} onApply={openApplication} />}
+      <ErrorBoundary resetKey={location.key}>
+        <Routes>
+          <Route index element={<BerandaMahasiswaPage user={user} submissions={submissions} onApply={openApplication} />} />
+          {/* key = location.key: setiap membuka menu ini, formulir dimulai dari awal. */}
+          <Route path="pengajuan" element={<PengajuanPage key={location.key} user={user} initialService={location.state?.service || ''} onCancel={() => openView('home')} />} />
+          <Route path="riwayat" element={<RiwayatPage submissions={submissions} selectedSubmissionId={selectedSubmissionId} setSelectedSubmissionId={setSelectedSubmissionId} />} />
+          <Route path="notifikasi" element={<NotifikasiPage readNotifications={readNotifications} setReadNotifications={setReadNotifications} onOpenSubmission={openSubmission} />} />
+          <Route path="profil" element={<ProfilMahasiswaPage user={user} onUpdateUser={onUpdateUser} />} />
+          <Route path="*" element={<TidakDitemukanPage dalamPortal beranda={VIEW_PATHS.home} />} />
+        </Routes>
+      </ErrorBoundary>
     </StudentLayout>
   )
 }
