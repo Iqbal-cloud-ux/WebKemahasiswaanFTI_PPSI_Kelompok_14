@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { login } = require('../controllers/authController');
+const { login, loginStaff } = require('../controllers/authController');
 const { verifyToken, checkRole } = require('../middlewares/authMiddleware');
 
 // Public Route
 router.post('/login', login);
+router.post('/staff-login', loginStaff);
 
 // Protected Route 1: Bisa diakses oleh SEMUA role yang punya Token JWT Valid
 router.get('/me', verifyToken, (req, res) => {

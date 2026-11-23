@@ -1,5 +1,6 @@
 import { ArrowLeft, ArrowRight, Bell, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Download, Eye, EyeOff, FilePlus2, FileText, GraduationCap, Info, LockKeyhole, LogOut, Menu, MoreHorizontal, Search, ShieldAlert, Upload, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { StaffDashboard } from './StaffPages.jsx'
 import './App.css'
 
 function App() {
@@ -40,6 +41,13 @@ function App() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [visiblePasswords, setVisiblePasswords] = useState({ current: false, new: false, confirm: false })
+
+  useEffect(() => {
+    if (window.location.pathname === '/login/staf') {
+      const destination = user?.role === 'staf' ? '/staf' : user?.role === 'mahasiswa' ? '/mahasiswa' : '/'
+      window.history.replaceState({}, '', destination)
+    }
+  }, [user])
 
   const validate = () => {
     const nextErrors = {}
@@ -147,6 +155,9 @@ function App() {
     setNewPassword('')
     setConfirmPassword('')
   }
+
+  if (window.location.pathname === '/staf') return <StaffDashboard user={user} />
+  if (user?.role === 'staf') return <StaffDashboard user={user} />
 
   if (user) {
     const services = [
@@ -350,7 +361,7 @@ function App() {
         <div className="divider" />
         <header className="login-heading">
           <h1>Masuk ke Layanan<br />Kemahasiswaan FTI</h1>
-          <p>Gunakan akun Anda untuk mengajukan dan memantau surat akademik.</p>
+          <p>Masuk dengan akun terdaftar. Anda akan diarahkan sesuai peran akun.</p>
         </header>
 
         {notice && <div className="notice error"><ShieldAlert size={16} /><span>{notice.message}</span></div>}
@@ -393,7 +404,7 @@ function App() {
         </form>
         <button type="button" className="forgot-button" onClick={() => setNotice({ type: 'info', message: 'Silakan hubungi Staf Akademik untuk mereset kata sandi.' })}>Lupa kata sandi?</button>
       </section>
-      <p className="help-text">Logo fakultas masih mengganti - Hubungi Staf Akademik untuk bantuan.</p>
+      <p className="help-text">Gunakan NIM/NIP atau email akun Anda. Dashboard akan ditentukan oleh peran yang terdaftar.</p>
       <footer>Fakultas Teknologi Informasi, Universitas Andalas<br /><span>© 2026 - Seluruh hak cipta dilindungi.</span></footer>
     </main>
   )
