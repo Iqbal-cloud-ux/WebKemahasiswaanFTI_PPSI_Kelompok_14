@@ -1,0 +1,26 @@
+/* Halaman Login dan halaman peran yang belum tersedia. */
+.login-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; background: linear-gradient(180deg, #ddfbe9 0%, #f6fafb 62%, #fff 100%); }
+.login-page { padding-top: 64px; }
+.login-card { width: min(100% - 32px, 270px); background: #fff; border: 1px solid #e1e9ed; border-radius: 9px; box-shadow: 0 3px 12px #29435312; }
+.login-card { padding: 20px 19px 18px; }
+.brand-row { display: flex; align-items: center; gap: 9px; }
+.brand-mark { width: 25px; height: 25px; display: grid; place-items: center; color: #126d3a; background: #edfff4; border: 1px solid #ccebd8; border-radius: 5px; }
+.brand-row strong, .brand-row span { display: block; }
+.brand-row strong { font-size: 9px; font-weight: 700; }
+.brand-row span { margin-top: 3px; color: #70808c; font-size: 7px; }
+.divider { height: 1px; margin: 15px 0 16px; background: #e7edf0; }
+.login-heading h1 { margin: 0; font-size: 16px; line-height: 1.3; letter-spacing: -.3px; }
+.login-heading p { margin: 5px 0 0; color: #60707c; font-size: 8px; line-height: 1.5; }
+.password-field { margin-top: 15px; padding: 14px 11px 11px; border: 1px solid #dfe7ec; border-radius: 7px; }
+.password-input { position: relative; }
+.password-input input { padding-right: 30px; }
+.icon-button { position: absolute; top: 0; right: 0; width: 30px; height: 30px; display: grid; place-items: center; border: 0; background: transparent; color: #647686; cursor: pointer; }
+.field-error { display: block; margin-top: 5px; color: #c33f3f; font-size: 7px; }
+.notice { display: flex; gap: 7px; align-items: flex-start; margin-top: 13px; padding: 9px; border-radius: 4px; font-size: 8px; line-height: 1.4; }
+.notice.error { color: #a52e32; background: #fff0f0; border: 1px solid #f4cccc; }
+.login-button { width: 100%; height: 30px; margin-top: 15px; border: 0; border-radius: 4px; color: #fff; background: #116d38; font-size: 8px; font-weight: 700; cursor: pointer; }
+.login-button:hover { background: #0c5d2f; }
+.login-button:disabled { opacity: .7; cursor: wait; }
+.forgot-button { display: block; margin: 16px auto 0; border: 0; color: #237b4d; background: transparent; font-size: 7px; cursor: pointer; }
+.help-text { margin: 16px 0 0; color: #71818c; font-size: 7px; }
+.login-button:hover { background: #0c5d2f; }

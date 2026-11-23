@@ -1,0 +1,62 @@
+/* Kerangka portal: sidebar kiri dan bar atas, dipakai layouts/StaffLayout.jsx dan layouts/StudentLayout.jsx. */
+.staff-dashboard-page { min-height: 100vh; display: block; color: #172033; background: #f7f9fb; }
+.staff-brand-mark { width: 36px; height: 36px; display: grid; flex: 0 0 36px; place-items: center; border: 1px solid #ccebd8; border-radius: 8px; color: #126d3a; background: #edfff4; }
+.staff-sidebar { position: fixed; z-index: 20; inset: 0 auto 0 0; width: 240px; display: flex; flex-direction: column; padding: 18px 16px 0; border-right: 1px solid #e3eaed; background: #fff; }
+.staff-sidebar-brand { display: flex; align-items: center; gap: 10px; min-height: 38px; }
+.staff-sidebar-brand strong { color: #172033; font-size: 12px; line-height: 1.35; }
+.staff-workspace-label { margin-top: 28px; color: #71818c; font-size: 9px; font-weight: 700; letter-spacing: .4px; }
+.staff-workspace-name { margin-top: 7px; color: #172033; font-size: 12px; font-weight: 700; }
+.staff-side-nav { display: grid; gap: 4px; margin-top: 18px; }
+.staff-side-link { min-height: 39px; display: flex; align-items: center; gap: 11px; padding: 0 10px; border: 0; border-radius: 5px; color: #526170; background: transparent; text-align: left; font-size: 11px; cursor: pointer; }
+.staff-side-link svg { flex: 0 0 auto; }
+.staff-side-link:hover { color: #126d3a; background: #f3faf5; }
+.staff-side-link.active { color: #126d3a; background: #effaf3; font-weight: 700; }
+.staff-side-divider { height: 1px; margin: 18px 0 10px; background: #e3eaed; }
+.staff-sidebar-footer { margin-top: auto; padding: 16px 0; border-top: 1px solid #e3eaed; color: #71818c; font-size: 9px; line-height: 1.6; }
+.staff-sidebar-close, .staff-menu-toggle { display: none; }
+.staff-sidebar-overlay { display: none; }
+.staff-workspace { min-height: 100vh; display: flex; flex-direction: column; margin-left: 240px; }
+.staff-topbar { position: sticky; z-index: 10; top: 0; min-height: 60px; display: flex; align-items: center; gap: 14px; padding: 0 26px; border-bottom: 1px solid #e3eaed; background: #fff; }
+.staff-topbar-title { display: flex; flex-direction: column; gap: 3px; }
+.staff-topbar-title strong { color: #172033; font-size: 12px; }
+.staff-topbar-title span { color: #71818c; font-size: 9px; }
+.staff-topbar-actions { display: flex; align-items: center; gap: 15px; margin-left: auto; }
+.staff-popover-anchor { position: relative; }
+.staff-icon-button, .staff-profile-button { border: 0; background: transparent; color: #526170; cursor: pointer; }
+.staff-icon-button { position: relative; display: grid; place-items: center; padding: 7px; }
+.staff-icon-button i { position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border: 1px solid #fff; border-radius: 50%; background: #d94d4d; }
+.staff-profile-button { display: flex; align-items: center; gap: 9px; padding: 2px; }
+.staff-avatar { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 50%; color: #126d3a; background: #dcf8e6; font-size: 10px; font-weight: 700; }
+.staff-popover { position: absolute; z-index: 30; top: calc(100% + 10px); right: 0; width: 245px; padding: 14px; border: 1px solid #e1e9ed; border-radius: 7px; background: #fff; box-shadow: 0 8px 22px #1720331a; }
+.staff-popover strong, .staff-popover span { display: block; color: #344252; font-size: 11px; }
+.staff-popover p { margin: 8px 0 5px; color: #526170; font-size: 11px; line-height: 1.5; }
+.staff-popover > span { color: #71818c; font-size: 10px; }
+.staff-profile-popover button { display: flex; align-items: center; gap: 7px; width: 100%; margin-top: 12px; padding: 9px 0 0; border: 0; border-top: 1px solid #edf0f2; color: #a52e32; background: transparent; font-size: 11px; text-align: left; cursor: pointer; }
+.staff-dashboard-content { width: min(100% - 52px, 1280px); flex: 1; margin: 0 auto; padding: 22px 0 32px; }
+.staff-dashboard-footer { padding: 15px 20px; border-top: 1px solid #e3eaed; color: #71818c; background: #fff; text-align: center; font-size: 9px; }
+@media (max-width: 1100px) {
+  .staff-sidebar { width: 220px; }
+  .staff-workspace { margin-left: 220px; }
+  .staff-dashboard-content { width: min(100% - 36px, 1280px); }
+}
+@media (max-width: 800px) {
+  .staff-sidebar { width: 250px; transform: translateX(-100%); transition: transform .2s ease; }
+  .staff-sidebar.is-open { transform: translateX(0); }
+  .staff-sidebar-close, .staff-menu-toggle { display: grid; place-items: center; border: 0; color: #526170; background: transparent; cursor: pointer; }
+  .staff-sidebar-close { margin-left: auto; padding: 6px; }
+  .staff-sidebar-overlay { position: fixed; z-index: 15; inset: 0; display: block; border: 0; background: #17203355; }
+  .staff-workspace { margin-left: 0; }
+  .staff-topbar { min-height: 58px; padding: 0 18px; }
+  .staff-dashboard-content { width: min(100% - 36px, 1280px); }
+}
+@media (max-width: 620px) {
+  .staff-dashboard-content { width: min(100% - 28px, 1280px); padding-top: 18px; }
+  .staff-profile-button > svg { display: none; }
+  .staff-topbar-actions { gap: 8px; }
+}
+.staff-profile-popover button { margin-top: 8px; }
+.staff-profile-popover .staff-profile-logout { color: #a52e32; }
+.student-nav-badge { min-width: 18px; height: 18px; display: grid; place-items: center; margin-left: auto; padding: 0 5px; border-radius: 9px; color: #fff; background: #116d38; font-size: 9px; font-weight: 700; }
+.student-side-logout { margin-top: 4px; color: #a52e32; }
+.student-side-logout:hover { color: #a52e32; background: #fff3f3; }
+.student-bell.active { color: #126d3a; }

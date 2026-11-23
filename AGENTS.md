@@ -81,8 +81,19 @@ Monorepo dengan dua aplikasi terpisah:
 ```
 client/   Frontend: Vite + React (JavaScript, bukan TypeScript)
   src/
-    assets/ components/ context/ hooks/ layouts/ pages/ services/ utils/
-    App.jsx  main.jsx  App.css  index.css
+    App.jsx                 hanya memilih portal sesuai peran (jangan menaruh halaman di sini)
+    main.jsx                titik masuk + impor CSS (urutan impor CSS penting)
+    pages/auth/             LoginPage.jsx + login.css
+    pages/mahasiswa/        MahasiswaPortal.jsx (menu + state bersama) dan satu file per halaman
+    pages/staf/             StafPortal.jsx (cek akses + menu) dan satu file per halaman
+    pages/PeranBelumTersediaPage.jsx  sementara untuk kakor, wadek1, dekan
+    layouts/                StudentLayout.jsx, StaffLayout.jsx (sidebar + bar atas) + portal.css
+    hooks/useSession.js     login, logout, perpanjangan dan berakhirnya sesi
+    services/api.js         semua fetch ke server (tambahkan endpoint baru di sini)
+    utils/roles.js          nilai peran dan rute beranda tiap peran
+    data/                   data contoh (palsu) sampai halaman tersambung ke server
+    styles/dasar.css        gaya dasar elemen HTML
+    components/ context/    untuk komponen dan context bersama (belum dipakai)
   vite.config.js  eslint.config.js  index.html  package.json
 server/   Backend: Node.js + Express (REST API)
   src/
