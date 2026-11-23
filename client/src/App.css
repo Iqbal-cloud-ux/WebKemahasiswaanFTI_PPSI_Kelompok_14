@@ -218,3 +218,5 @@ footer span { color: #87949d; }
 .profile-password-submit { margin: 0; min-width: 150px; }
 @media (max-width: 700px) { .profile-layout { grid-template-columns: 1fr; gap: 30px; }.profile-heading h1 { font-size: 24px; }.profile-section h2 { margin-bottom: 10px; } }
 @media (max-width: 700px) { .application-steps { grid-template-columns: 1fr; gap: 10px; }.application-steps > i { width: 1px; height: 12px; margin-left: 13px; }.application-step { font-size: 11px; }.application-option { grid-template-columns: 34px minmax(0, 1fr) 18px; padding: 13px; }.option-audience { display: none; }.option-description strong { font-size: 12px; }.application-heading h1 { font-size: 24px; }.temporary-note { padding: 13px; } }
+.staff-login-link { display: block; width: fit-content; margin: 14px auto 0; color: #237b4d; font-size: 8px; font-weight: 700; text-decoration: none; }
+.staff-login-link:hover { text-decoration: underline; }
