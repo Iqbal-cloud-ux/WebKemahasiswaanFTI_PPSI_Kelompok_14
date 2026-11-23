@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 require('dotenv').config();
+
+// Rahasia JWT wajib ada di .env; tanpa itu token bisa dipalsukan.
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET belum diisi di server/.env. Server tidak dijalankan.');
+}
 
 // Import & Uji Koneksi Database MySQL
 require('./config/db');
@@ -13,8 +17,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve folder uploads sebagai static folder (agar file PDF/Gambar bisa diakses)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Folder uploads sengaja TIDAK disajikan sebagai file statis: berkas persyaratan
+// memuat data sensitif dan harus diunduh lewat endpoint yang memeriksa hak akses.
 
 // Import Routes
 const authRoutes = require('./routes/authRoutes');

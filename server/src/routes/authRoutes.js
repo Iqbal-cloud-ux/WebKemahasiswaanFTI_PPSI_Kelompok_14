@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { login, loginStaff } = require('../controllers/authController');
+const { login, refresh, logout } = require('../controllers/authController');
 const { verifyToken, checkRole } = require('../middlewares/authMiddleware');
+const { batasiLogin } = require('../middlewares/loginLimiter');
 
-// Public Route
-router.post('/login', login);
-router.post('/staff-login', loginStaff);
+// Public Route (dibatasi: 5 kali gagal per 15 menit untuk NIM/email + IP yang sama)
+router.post('/login', batasiLogin, login);
+
+// Butuh token yang masih berlaku
+router.post('/refresh', verifyToken, refresh);
+router.post('/logout', verifyToken, logout);
 
 // Protected Route 1: Bisa diakses oleh SEMUA role yang punya Token JWT Valid
 router.get('/me', verifyToken, (req, res) => {

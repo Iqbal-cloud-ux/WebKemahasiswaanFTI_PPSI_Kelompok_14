@@ -11,11 +11,12 @@ const verifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // Menyimpan data payload user (id, identifier, role, nama) ke objek request
     next();
-  } catch (error) {
-    return sendError(res, 'Token tidak valid atau sudah kadaluwarsa', 403);
+  } catch {
+    // 401 = belum/tidak lagi terautentikasi. 403 khusus untuk peran yang tidak berhak.
+    return sendError(res, 'Sesi tidak valid atau sudah berakhir. Silakan masuk kembali', 401);
   }
 };
 
