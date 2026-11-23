@@ -14,9 +14,10 @@ lalu buka file di `docs/` sesuai kebutuhan tugas. Bahasa komunikasi dan teks ant
   pribadi mahasiswa (termasuk nama dan NIM asli). File `.env`, `node_modules/`, dan isi `server/uploads/` sudah diabaikan lewat `.gitignore`;
   jangan menghapus aturan itu. Jangan menempelkan data asli mahasiswa pada contoh kode atau seed data;
   pakai data palsu.
-- **Struktur database boleh berubah** sesuai kebutuhan pengembangan. `docs/data.md` hanya rancangan
-  awal dari ERD A3. Sumber kebenaran skema yang sebenarnya adalah database dan kode yang sudah ada;
-  periksa itu dulu sebelum menulis kueri atau migrasi, dan beri tahu pengguna bila perlu mengubah tabel.
+- **Struktur database boleh berubah** sesuai kebutuhan pengembangan. Sumber kebenaran skema adalah
+  `server/database/schema.sql` ditambah migrasi di `server/database/migrations/` (ringkasannya di
+  `docs/data.md`); ERD A3 hanya rancangan awal. Periksa itu dulu sebelum menulis kueri. Setiap
+  perubahan tabel dibuat sebagai file migrasi bernomor baru, dan beri tahu pengguna sebelumnya.
 - **Ikuti pola kode yang sudah ada** (lihat alur `routes -> controllers -> services/models` pada
   fitur autentikasi di `server/src`). Jangan refactor di luar tugas yang diminta.
 - Perubahan kecil dan terfokus. Jelaskan apa yang diubah dan bagaimana mengujinya.
@@ -93,12 +94,15 @@ server/   Backend: Node.js + Express (REST API)
     services/               logika bisnis
     utils/responseHandler.js  format respons API yang seragam
     app.js                  konfigurasi Express
+  database/schema.sql       struktur tabel (tanpa data), diimpor lewat phpMyAdmin
+  database/migrations/      perubahan skema bernomor urut (001_..., 002_...)
   uploads/letters/          surat hasil generate (PDF)
   uploads/requirements/     berkas persyaratan dari mahasiswa
   index.js  .env  package.json
 ```
 
-- Database: **MySQL** (menurut dokumen A3). Detail tabel di `docs/data.md`.
+- Database: **MySQL/MariaDB** (XAMPP). Detail tabel di `docs/data.md`. Nilai `users.role`:
+  `mahasiswa`, `staf`, `kakor` (Kepala Kantor), `wadek1` (Wakil Dekan 1), `dekan`.
 - Autentikasi: login dengan NIM/email dan kata sandi; sandi disimpan dalam bentuk hash; sesi/token
   berakhir otomatis bila tidak aktif (usulan 30 menit). `[BELUM FINAL: mekanisme token]`
 - Library tambahan (CSS framework, pembuat PDF, pembuat QR, dll.): cek `client/package.json` dan
@@ -170,9 +174,9 @@ Pengguna tanpa login selalu diarahkan ke halaman login. Penolakan akses memakai 
 
 ## Yang belum diputuskan (tanyakan sebelum mengerjakan)
 
-- Daftar final status pengajuan dan aturan pengembalian draf (lihat `docs/alur-status.md`).
+- Konfirmasi tim atas pemetaan status: kode memakai ENUM `pengajuan.status` di database, antarmuka
+  memakai label di `docs/alur-status.md`. Juga aturan pengembalian draf dan tempat menyimpan status draf.
 - Layanan ke-5 (Pengunduran Diri) dan daftar dokumen persyaratan tiap layanan.
 - Penomoran surat: format resmi FTI belum dikonfirmasi.
-- Tabel `log_aktivitas` dan `pengaturan_tte` ada di diagram kelas tetapi belum ada di ERD.
 - Mekanisme TTE sungguhan (Internal Engine atau BSrE) dan masa retensi arsip.
 - Pembuat PDF yang dipakai (PDFKit atau Puppeteer) dan kanal notifikasi (dalam aplikasi saja atau juga email).
