@@ -63,11 +63,17 @@ surat dari template, paraf berjenjang, persetujuan Dekan, kode verifikasi (QR + 
 
 Jenis layanan (surat):
 
-1. Surat Keterangan Aktif Kuliah
-2. Surat Keterangan Beasiswa
-3. Surat Keterangan Penurunan UKT
-4. Surat Keterangan Pengembalian UKT
-5. Surat Keterangan Pengunduran Diri `[BELUM FINAL: tercantum di A2 tetapi belum di semua dokumen]`
+1. Surat Keterangan Aktif Kuliah, dipecah di sistem menjadi dua layanan: Keperluan Pribadi dan
+   Keperluan Orang Tua
+2. Surat Keterangan Lulus
+3. Surat Keterangan Tidak Menerima Beasiswa
+4. Permohonan Penyesuaian UKT (di A1 sampai A3 disebut Penurunan UKT)
+5. Pengembalian UKT
+6. Pengunduran Diri atau Pindah Mahasiswa
+7. Pendaftaran Wisuda Online atau Kliring Fakultas
+
+Syarat dokumen tiap layanan ada di `docs/persyaratan-layanan.md`. Data awal layanan, syarat, template,
+dan akun uji (palsu) dibuat lewat `npm run seed` di folder `server/`.
 
 Konteks: tugas kelompok mata kuliah PPSI (Kelompok 14), dosen pengampu Husnil Kamil, M.T.
 Dokumen proyek: A1 (proposal), A2 (spesifikasi), A3 (rancangan); A4 dan A5 menyusul.
@@ -87,29 +93,38 @@ client/   Frontend: Vite + React (JavaScript, bukan TypeScript)
     pages/mahasiswa/        MahasiswaPortal.jsx (rute /mahasiswa/... + state bersama) dan satu file per halaman
     pages/staf/             StafPortal.jsx (cek akses + rute /staf/...) dan satu file per halaman
     pages/galat/            AksesDitolakPage.jsx (403) dan TidakDitemukanPage.jsx (404)
-    pages/PeranBelumTersediaPage.jsx  sementara untuk kakor, wadek1, dekan
-    layouts/                StudentLayout.jsx, StaffLayout.jsx (sidebar + bar atas) + portal.css
+    pages/pimpinan/         PimpinanPortal.jsx (rute /kepala-kantor/... dan /wakil-dekan/...): antrean paraf,
+                            detail pemeriksaan, riwayat pengesahan + pimpinan.css
+    pages/PeranBelumTersediaPage.jsx  sementara untuk dekan
+    layouts/                StudentLayout.jsx, StaffLayout.jsx, PimpinanLayout.jsx (sidebar + bar atas) + portal.css
     hooks/useSession.js     login, logout, perpanjangan dan berakhirnya sesi
-    services/api.js         semua fetch ke server (tambahkan endpoint baru di sini)
-    utils/roles.js          nilai peran dan rute beranda tiap peran
-    data/                   data contoh (palsu) sampai halaman tersambung ke server
+    hooks/useDataServer.js  ambil data dari server: { status: memuat|siap|galat, data, pesan } + muat ulang
+    services/api.js         semua fetch ke server (tambahkan endpoint baru di sini); bacaHasil() membaca respons
+    utils/                  roles.js (peran), statusPengajuan.js (label/warna status), berkas.js (aturan unggah),
+                            semester.js
+    data/contohStaf.js      data contoh (palsu) untuk halaman staf yang belum tersambung ke server
     styles/dasar.css        gaya dasar elemen HTML
     components/             komponen bersama: PenjagaPeran.jsx (belum login -> Login, peran lain -> 403),
-                            ErrorBoundary.jsx (penangkap galat tampilan), KartuPesan.jsx
+                            ErrorBoundary.jsx (penangkap galat tampilan), KartuPesan.jsx,
+                            PratinjauBerkas.jsx (buka berkas persyaratan lewat /api/berkas/:id)
     context/                untuk context bersama (belum dipakai)
   vite.config.js  eslint.config.js  index.html  package.json
 server/   Backend: Node.js + Express (REST API)
   src/
     config/db.js            koneksi database
-    controllers/            logika penanganan request (saat ini: authController.js)
-    middlewares/            (saat ini: authMiddleware.js)
-    models/                 akses data (saat ini: userModel.js)
-    routes/                 definisi endpoint (saat ini: authRoutes.js)
-    services/               logika bisnis
-    utils/responseHandler.js  format respons API yang seragam
+    controllers/            logika penanganan request (auth, layanan, pengajuan, profil)
+    middlewares/            authMiddleware.js (token + peran), loginLimiter.js,
+                            unggahBerkas.js (terima berkas PDF/JPG/PNG maks 5 MB)
+    models/                 akses data (user, log, layanan, pengajuan)
+    routes/                 definisi endpoint, didaftarkan di app.js
+    services/               logika bisnis; statusService.js = satu-satunya tempat mengubah
+                            pengajuan.status (riwayat + notifikasi + log dalam satu transaksi)
+    utils/                  responseHandler.js (format respons), galat.js (GalatAplikasi),
+                            transaksi.js (denganTransaksi), semester.js
     app.js                  konfigurasi Express
   database/schema.sql       struktur tabel (tanpa data), diimpor lewat phpMyAdmin
   database/migrations/      perubahan skema bernomor urut (001_..., 002_...)
+  database/seed.js          data awal dan akun uji palsu (npm run seed)
   uploads/letters/          surat hasil generate (PDF)
   uploads/requirements/     berkas persyaratan dari mahasiswa
   index.js  .env  package.json
@@ -185,12 +200,19 @@ Pengguna tanpa login selalu diarahkan ke halaman login. Penolakan akses memakai 
 - `docs/alur-layar.md`: layar demi layar per peran, tombol, dan tujuan perpindahannya.
 - `docs/alur-status.md`: status pengajuan, aturan perpindahan, siapa yang boleh, efek samping.
 - `docs/data.md`: tabel database, kolom, dan relasi.
+- `docs/persyaratan-layanan.md`: tujuh layanan (delapan jenis layanan di sistem) dan dokumen yang
+  diwajibkan untuk tiap layanan.
 
 ## Yang belum diputuskan (tanyakan sebelum mengerjakan)
 
-- Konfirmasi tim atas pemetaan status: kode memakai ENUM `pengajuan.status` di database, antarmuka
-  memakai label di `docs/alur-status.md`. Juga aturan pengembalian draf dan tempat menyimpan status draf.
-- Layanan ke-5 (Pengunduran Diri) dan daftar dokumen persyaratan tiap layanan.
+- Syarat sewa baju wisuda (belum ada sumbernya), dan cara menangani pindah mahasiswa.
 - Penomoran surat: format resmi FTI belum dikonfirmasi.
 - Mekanisme TTE sungguhan (Internal Engine atau BSrE) dan masa retensi arsip.
-- Pembuat PDF yang dipakai (PDFKit atau Puppeteer) dan kanal notifikasi (dalam aplikasi saja atau juga email).
+- Status "S1 reguler" untuk Permohonan Penyesuaian UKT belum disimpan di database (saat ini hanya
+  jenjang S1 yang diperiksa).
+
+Sudah diputuskan (24 November 2026): pemetaan status di `docs/alur-status.md` (ENUM database ke label
+antarmuka) dan penyimpanan status draf di `surat_resmi.status_draf` (migrasi 002).
+Pembuat PDF memakai **PDFKit** (pembuat QR: `qrcode`).
+Notifikasi saat ini hanya di dalam aplikasi; pengiriman lewat email (untuk surat selesai, disetujui,
+ditolak, atau perlu perbaikan) dikerjakan belakangan.

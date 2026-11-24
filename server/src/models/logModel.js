@@ -3,12 +3,13 @@ const db = require('../config/db');
 // Catatan aktivitas hanya boleh DITAMBAH. Jangan membuat fungsi ubah atau hapus di sini.
 const LogAktivitas = {
   // Jangan pernah memasukkan kata sandi, token, atau kunci rahasia ke description.
-  create: async ({ userId = null, action, description, ipAddress = null }) => {
+  // executor: koneksi transaksi bila log harus ikut dibatalkan saat transaksi gagal; default pool biasa.
+  create: async ({ userId = null, action, description, ipAddress = null }, executor = db) => {
     const query = `
       INSERT INTO log_aktivitas (user_id, action, description, ip_address)
       VALUES (?, ?, ?, ?)
     `;
-    await db.query(query, [userId, action, description, ipAddress]);
+    await executor.query(query, [userId, action, description, ipAddress]);
   }
 };
 

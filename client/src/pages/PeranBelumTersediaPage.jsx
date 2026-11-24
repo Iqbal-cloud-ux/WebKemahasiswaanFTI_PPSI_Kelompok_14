@@ -1,6 +1,6 @@
 import { GraduationCap } from 'lucide-react'
 
-// Peran yang halamannya belum dibuat (Kepala Kantor, Wakil Dekan, Dekan) atau peran tidak dikenali.
+// Peran yang halamannya belum dibuat (saat ini: Dekan) atau peran tidak dikenali.
 // Ganti dengan portal masing-masing (misalnya pages/pimpinan/) setelah halamannya dibuat.
 export function PeranBelumTersediaPage({ user, roleLabel, onLogout }) {
   return (

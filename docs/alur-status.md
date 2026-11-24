@@ -1,6 +1,6 @@
 Alur status pengajuan
 
-Sumber: A1 (FSM), A2 (kebutuhan dan BPMN To-Be), A3 (use case dan sequence diagram), disesuaikan dengan ENUM pengajuan.status di database (server/database/schema.sql). Kode dan database memakai nilai teknis di kolom pertama; antarmuka menampilkan label di kolom kedua. Pemetaan ini usulan dan ditandai [BELUM FINAL] sampai tim mengonfirmasi.
+Sumber: A1 (FSM), A2 (kebutuhan dan BPMN To-Be), A3 (use case dan sequence diagram), disesuaikan dengan ENUM pengajuan.status di database (server/database/schema.sql). Kode dan database memakai nilai teknis di kolom pertama; antarmuka menampilkan label di kolom kedua. Pemetaan ini sudah disetujui tim (24 November 2026); bila ternyata perlu diubah, perbaiki di sini dan di docs/data.md.
 
 Status (pengajuan.status)
 Nilai database	Label di antarmuka	Arti
@@ -38,7 +38,7 @@ Catatan: A1 menggambarkan "Perlu Perbaikan" dari status Diverifikasi, sedangkan 
 Tahap persetujuan berjenjang
 
 Urutan paraf: Kepala Kantor (kakor) -> Wakil Dekan 1 (wadek1) -> Dekan. Urutan per jenis surat dan siapa yang berwenang menandatangani tiap jenis surat masih perlu dikonfirmasi [BELUM FINAL]. Setiap keputusan pejabat dicatat satu baris di tabel persetujuan (pimpinan_id, role_pimpinan, status, catatan, created_at).
-Saat ini persetujuan.status hanya punya nilai approved dan rejected. Untuk "Kembalikan dengan catatan" perlu nilai tambahan (misalnya returned) lewat migrasi baru [BELUM FINAL].
+Nilai persetujuan.status: approved (Setujui dan Paraf, atau Setujui oleh Dekan), rejected (Tolak oleh Dekan), returned (Kembalikan dengan catatan; ditambahkan di migrasi 002).
 
 Efek samping setiap perpindahan (wajib)
 Mengubah pengajuan.status (dan pengajuan.catatan_revisi bila ada catatan).
@@ -57,7 +57,16 @@ Bila langkah gagal, status tetap pending_dekan dan data tidak hilang; tampilkan 
 
 Status draf surat (terpisah dari status pengajuan)
 
-Dipakai di halaman Draf Surat staf untuk pengajuan berstatus diverifikasi: Belum Dibuat, Draf Dibuat, Dikembalikan untuk Revisi. Database belum punya kolom untuk menyimpannya (lihat docs/data.md) [BELUM FINAL].
+Dipakai di halaman Draf Surat staf untuk pengajuan berstatus diverifikasi. Disimpan di surat_resmi.status_draf (migrasi 002, lihat docs/data.md).
+
+Nilai database	Label di antarmuka	Kapan
+(belum ada baris surat_resmi)	Belum Dibuat	Pengajuan baru diverifikasi; staf belum menyimpan draf
+dibuat	Draf Dibuat	Staf menyimpan draf; belum diteruskan
+diteruskan	(mengikuti status pengajuan)	Staf menekan Teruskan; pengajuan pindah ke pending_kakor
+dikembalikan	Dikembalikan untuk Revisi	Pejabat menekan Kembalikan; pengajuan kembali ke diverifikasi
+terbit	(mengikuti status pengajuan: Selesai)	Dekan menyetujui dan surat berhasil terbit
+
+Perubahan status_draf terjadi dalam transaksi yang sama dengan perpindahan pengajuan.status terkait.
 
 Banding atas penolakan (opsional) [BELUM FINAL]
 

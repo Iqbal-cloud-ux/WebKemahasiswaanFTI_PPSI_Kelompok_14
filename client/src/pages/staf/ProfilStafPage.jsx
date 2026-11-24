@@ -1,27 +1,37 @@
 import { useState } from 'react'
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, X } from 'lucide-react'
+import { bacaHasil, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
 
-export function ProfilStafPage({ user, staffName, initials }) {
-  const [email, setEmail] = useState(user?.email || 'staff.akademik@fti.unand.ac.id')
-  const [phone, setPhone] = useState(user?.no_hp || '0812 0000 0000')
+// Profil staf: identitas hanya baca, ubah kontak, dan ganti kata sandi (tersambung ke /api/profil).
+export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
+  const [email, setEmail] = useState(user?.email || '')
+  const [phone, setPhone] = useState(user?.no_hp || '')
+  const [saving, setSaving] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [visiblePasswords, setVisiblePasswords] = useState({ current: false, new: false, confirm: false })
   const [feedback, setFeedback] = useState(null)
 
-  const saveContactProfile = (event) => {
+  const saveContactProfile = async (event) => {
     event.preventDefault()
     if (!email.trim() || !phone.trim()) {
       setFeedback({ type: 'error', message: 'Email dan nomor telepon wajib diisi.' })
       return
     }
-    const updatedUser = { ...user, email: email.trim(), no_hp: phone.trim() }
-    localStorage.setItem('user', JSON.stringify(updatedUser))
-    setFeedback({ type: 'success', message: 'Informasi kontak berhasil disimpan.' })
+    setSaving(true)
+    try {
+      const profil = await bacaHasil(await ubahKontakRequest({ email: email.trim(), no_hp: phone.trim() }))
+      onUpdateUser({ ...user, email: profil.email, no_hp: profil.no_hp })
+      setFeedback({ type: 'success', message: 'Informasi kontak berhasil disimpan.' })
+    } catch (galat) {
+      setFeedback({ type: 'error', message: galat.message })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const changePassword = (event) => {
+  const changePassword = async (event) => {
     event.preventDefault()
     if (!currentPassword || !newPassword || !confirmPassword) {
       setFeedback({ type: 'error', message: 'Lengkapi semua kolom kata sandi terlebih dahulu.' })
@@ -35,10 +45,18 @@ export function ProfilStafPage({ user, staffName, initials }) {
       setFeedback({ type: 'error', message: 'Konfirmasi kata sandi baru tidak cocok.' })
       return
     }
-    setFeedback({ type: 'success', message: 'Validasi berhasil. Fitur ubah kata sandi akan terhubung ke server.' })
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
+    setSaving(true)
+    try {
+      await bacaHasil(await ubahKataSandiRequest({ kata_sandi_lama: currentPassword, kata_sandi_baru: newPassword }))
+      setFeedback({ type: 'success', message: 'Kata sandi berhasil diubah. Gunakan kata sandi baru saat masuk berikutnya.' })
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (galat) {
+      setFeedback({ type: 'error', message: galat.message })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const passwordFields = [
@@ -93,7 +111,7 @@ export function ProfilStafPage({ user, staffName, initials }) {
               <span><input id="staff-profile-unit" value="Akademik - Fakultas Teknologi Informasi" readOnly /></span>
               <small>&nbsp;</small>
             </label>
-            <button type="submit" className="staff-profile-save">Simpan Perubahan</button>
+            <button type="submit" className="staff-profile-save" disabled={saving}>Simpan Perubahan</button>
           </form>
         </section>
 
@@ -112,7 +130,7 @@ export function ProfilStafPage({ user, staffName, initials }) {
                 </span>
               </label>
             ))}
-            <button type="submit" className="staff-profile-password-save">Ubah Kata Sandi</button>
+            <button type="submit" className="staff-profile-password-save" disabled={saving}>Ubah Kata Sandi</button>
           </form>
         </section>
       </div>

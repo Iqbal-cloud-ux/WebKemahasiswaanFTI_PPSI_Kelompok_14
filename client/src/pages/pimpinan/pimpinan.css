@@ -1,0 +1,30 @@
+/* Portal pimpinan (Kepala Kantor, Wakil Dekan 1). Memakai gaya dasar staf (staf.css); di sini hanya tambahannya. */
+.pimpinan-stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.pimpinan-search { display: block; margin: 0 0 10px; }
+.pimpinan-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.pimpinan-filter .staff-search-control { flex: 1 1 240px; }
+.pimpinan-filter select { min-width: 170px; }
+.pimpinan-sub { display: block; margin-top: 3px; color: #75828c; font-size: 8px; }
+.staff-notice .pimpinan-tutup { display: grid; place-items: center; margin-left: auto; border: 0; color: inherit; background: transparent; cursor: pointer; }
+
+.pimpinan-pdf-panel h2 { margin: 0 0 10px; }
+.pimpinan-pdf { width: 100%; height: min(78vh, 900px); border: 1px solid #e3e9ed; border-radius: 6px; background: #f6f8f9; }
+.pimpinan-pdf-link { display: inline-block; margin-top: 6px; color: #116d38; font-size: 10px; }
+.pimpinan-pdf-pesan { display: flex; align-items: center; gap: 6px; color: #526170; font-size: 11px; }
+.pimpinan-pdf-pesan.galat { color: #a52e32; }
+
+.pimpinan-berkas { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+.pimpinan-berkas li { display: grid; grid-template-columns: 14px minmax(0, 1fr) 26px; align-items: center; gap: 6px; color: #263445; font-size: 9px; }
+.pimpinan-berkas button { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid #cbd5da; border-radius: 5px; color: #116d38; background: #fff; cursor: pointer; }
+.pimpinan-riwayat-paraf { margin-top: 10px; font-size: 9px; color: #526170; }
+.pimpinan-riwayat-paraf summary { cursor: pointer; color: #116d38; }
+.pimpinan-riwayat-paraf ul { margin: 8px 0 0; padding-left: 16px; }
+.pimpinan-riwayat-paraf li { margin-bottom: 6px; }
+.pimpinan-riwayat-paraf p { margin: 2px 0 0; color: #7a4a1c; }
+
+.pimpinan-keputusan { display: grid; gap: 6px; margin-top: 14px; }
+.pimpinan-keputusan label { color: #526170; font-size: 10px; font-weight: 600; }
+.pimpinan-keputusan textarea { min-height: 70px; resize: vertical; padding: 8px 9px; border: 1px solid #dfe7ec; border-radius: 5px; font: inherit; font-size: 11px; }
+.pimpinan-keputusan .staff-review-actions { margin-top: 4px; }
+.pimpinan-keputusan .staff-review-actions button { display: inline-flex; align-items: center; gap: 5px; }
+.pimpinan-konfirmasi .staff-config-delete-icon.setujui { color: #16763f; background: #effaf3; }

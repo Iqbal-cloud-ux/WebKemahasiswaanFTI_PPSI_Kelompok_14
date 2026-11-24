@@ -7,6 +7,7 @@ import './pages/staf/staf.css'
 import './styles/dasar.css'
 import './pages/auth/login.css'
 import './pages/mahasiswa/mahasiswa.css'
+import './pages/pimpinan/pimpinan.css'
 import App from './App.jsx'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 

@@ -103,7 +103,7 @@ export function useSession() {
     endSession()
   }
 
-  // Simpan perubahan data profil di peramban (belum tersinkron ke server).
+  // Simpan data profil terbaru di peramban setelah server menyimpan perubahan (halaman Profil).
   const updateUser = (updatedUser) => {
     localStorage.setItem('user', JSON.stringify(updatedUser))
     setUser(updatedUser)

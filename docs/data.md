@@ -6,6 +6,7 @@ Cara menyiapkan database kosong
 1. Buat database sesuai DB_NAME di server/.env (XAMPP, phpMyAdmin).
 2. Impor server/database/schema.sql.
 3. Jalankan file di server/database/migrations/ berurutan dari nomor terkecil.
+4. Isi SEED_PASSWORD di server/.env, lalu jalankan `npm run seed` di folder server untuk data awal dan akun uji.
 
 Cara mengubah skema
 - Jangan mengedit tabel langsung di phpMyAdmin tanpa jejak. Buat file migrasi baru bernomor urut, misalnya `002_nama_perubahan.sql`, berisi perintah ALTER/CREATE yang aman dijalankan ulang bila memungkinkan.
@@ -18,9 +19,11 @@ Konvensi kolom
 - Nilai ya/tidak memakai TINYINT(1) dengan awalan `is_` (misalnya `is_active`, `is_read`).
 - Charset utf8mb4, collation utf8mb4_general_ci, engine InnoDB.
 
-Tabel (11 di schema.sql + 2 dari migrasi 001)
+Tabel (11 di schema.sql + 2 dari migrasi 001; migrasi 002 dan 003 menambah kolom)
 
-users: id, identifier (NIM/NIP, unik), nama, email (unik), password (hash bcrypt, tidak boleh teks biasa), role, prodi, no_hp, created_at, updated_at.
+users: id, identifier (NIM/NIP, unik), nama, email (unik), password (hash bcrypt, tidak boleh teks biasa), role, prodi, jenjang, angkatan, no_hp, is_active (migrasi 002, default 1), created_at, updated_at.
+  Akun dengan is_active = 0 ditolak saat login dan saat memperpanjang sesi.
+  jenjang (misalnya 'S1') dan angkatan (tahun masuk) ditambahkan di migrasi 003; hanya diisi untuk mahasiswa. Dipakai untuk memeriksa syarat peserta Permohonan Penyesuaian UKT; semester dihitung dari angkatan.
   role = ENUM('mahasiswa', 'staf', 'kakor', 'wadek1', 'dekan'). kakor = Kepala Kantor, wadek1 = Wakil Dekan 1. Staf Akademik (`staf`) juga bertindak sebagai admin.
   Data akademik mahasiswa (NIM, prodi) disimpan langsung di tabel ini; tidak ada tabel mahasiswa terpisah.
 
@@ -29,15 +32,22 @@ jenis_layanan: id, kode_layanan (unik), nama_layanan, deskripsi, is_active, crea
 syarat_layanan: id, jenis_layanan_id (FK), nama_syarat, tipe_file (default 'pdf'), is_required. Satu layanan punya banyak syarat. Pengajuan baru bisa dikirim bila semua syarat dengan is_required = 1 sudah ada berkasnya.
 
 template_surat: id, jenis_layanan_id (FK, unik: satu template per layanan), header_surat, body_template, footer_surat, updated_at. Template berisi variabel dinamis yang diganti dari data pengajuan dan mahasiswa.
+  Variabel yang dipakai template awal: {{nama}}, {{nim}}, {{prodi}}, {{keperluan}}, {{no_surat}}, {{tanggal}}.
+
+Data awal (seed): `npm run seed` di folder server mengisi 8 jenis layanan, syaratnya, satu template per layanan, dan akun uji palsu untuk 5 peran (kata sandi dari SEED_PASSWORD di .env). Butuh migrasi 002 dan 003. Aman dijalankan ulang; data yang sudah ada tidak ditimpa. Daftar akun uji ada di server/database/seed.js.
 
 pengajuan: id, no_referensi (unik), mahasiswa_id (FK ke users.id), jenis_layanan_id (FK), keperluan, status, catatan_revisi, created_at, updated_at.
-  status = ENUM('diajukan', 'perlu_perbaikan', 'diverifikasi', 'pending_kakor', 'pending_wadek1', 'pending_dekan', 'disetujui', 'ditolak'), default 'diajukan'. Arti, label tampilan, dan perpindahan yang diizinkan ada di docs/alur-status.md. Format no_referensi [BELUM FINAL].
+  status = ENUM('diajukan', 'perlu_perbaikan', 'diverifikasi', 'pending_kakor', 'pending_wadek1', 'pending_dekan', 'disetujui', 'ditolak'), default 'diajukan'. Arti, label tampilan, dan perpindahan yang diizinkan ada di docs/alur-status.md; di kode, aturan itu ada di server/src/services/statusService.js.
+  no_referensi dibuat server dengan format PGJ-<tahun>-<urut 5 digit>, misalnya PGJ-2026-00001; urutan mulai lagi dari 1 setiap tahun. Ini nomor pengajuan, bukan nomor surat resmi.
 
-berkas_pengajuan: id, pengajuan_id (FK), syarat_layanan_id (FK), file_path, original_name, created_at. File disimpan di server/uploads/requirements/ dan hanya boleh dibuka lewat endpoint yang memeriksa hak akses.
+berkas_pengajuan: id, pengajuan_id (FK), syarat_layanan_id (FK), file_path, original_name, status_verifikasi, catatan_verifikasi, created_at. File disimpan di server/uploads/requirements/ dengan nama acak dan hanya boleh dibuka lewat endpoint yang memeriksa hak akses. file_path relatif terhadap folder uploads (misalnya requirements/<uuid>.pdf); original_name adalah nama asli dari mahasiswa.
+  status_verifikasi (migrasi 002) = ENUM('belum_diperiksa', 'sesuai', 'tidak_sesuai'), default 'belum_diperiksa'. Hasil pemeriksaan staf per dokumen; catatan_verifikasi berisi alasan bila tidak sesuai.
 
-persetujuan: id, pengajuan_id (FK), pimpinan_id (FK ke users.id), role_pimpinan ENUM('kakor', 'wadek1', 'dekan'), status ENUM('approved', 'rejected'), catatan, created_at. Satu baris per keputusan pejabat.
+persetujuan: id, pengajuan_id (FK), pimpinan_id (FK ke users.id), role_pimpinan ENUM('kakor', 'wadek1', 'dekan'), status ENUM('approved', 'rejected', 'returned'), catatan, created_at. Satu baris per keputusan pejabat. 'returned' (migrasi 002) = Kembalikan dengan catatan.
 
-surat_resmi: id, pengajuan_id (FK, unik: satu surat per pengajuan), no_surat (unik), file_pdf_path, hash_sha256, qr_code_path, tgl_terbit, created_at. PDF di server/uploads/letters/.
+surat_resmi: id, pengajuan_id (FK, unik: satu surat per pengajuan), status_draf, isi_draf, file_draf_path, no_surat (unik), file_pdf_path, hash_sha256, qr_code_path, tgl_terbit, created_at, updated_at. PDF di server/uploads/letters/.
+  Tabel ini menyimpan draf sekaligus surat final. Baris dibuat saat staf pertama kali menyimpan draf; no_surat, hash, QR, PDF final, dan tgl_terbit baru diisi saat Dekan menyetujui.
+  status_draf (migrasi 002) = ENUM('dibuat', 'dikembalikan', 'diteruskan', 'terbit'), default 'dibuat'. Pengajuan diverifikasi yang belum punya baris surat_resmi berarti draf "Belum Dibuat". Pemetaan ke label ada di docs/alur-status.md.
 
 public_verification: id, surat_id (FK ke surat_resmi), scanned_at, user_agent, ip_address. Mencatat setiap pemeriksaan keaslian surat lewat halaman publik.
 
@@ -55,13 +65,10 @@ jenis_layanan 1-N syarat_layanan, pengajuan; jenis_layanan 1-1 template_surat.
 pengajuan 1-N berkas_pengajuan, persetujuan, riwayat_status, notifikasi; pengajuan 1-1 surat_resmi.
 syarat_layanan 1-N berkas_pengajuan. surat_resmi 1-N public_verification.
 
-Perbedaan dengan ERD A3 dan docs lain [BELUM FINAL: perlu keputusan tim]
-1. Status pengajuan: ENUM database dipakai apa adanya. docs/alur-status.md memetakan nilai database ke label antarmuka (misalnya pending_kakor/pending_wadek1/pending_dekan tampil "Menunggu Persetujuan", disetujui tampil "Selesai"). Usulan ini perlu dikonfirmasi tim sebelum issue #71 dikerjakan.
-2. Status draf surat (Belum Dibuat, Draf Dibuat, Dikembalikan untuk Revisi) belum punya tempat penyimpanan; surat_resmi juga belum punya kolom lokasi draf.
-3. persetujuan.status hanya 'approved' dan 'rejected'; belum ada nilai untuk "Kembalikan dengan catatan" yang dipakai Kepala Kantor, Wakil Dekan, dan Dekan.
-4. berkas_pengajuan belum punya status dan catatan verifikasi per dokumen, padahal halaman pemeriksaan staf menandai tiap dokumen Sesuai atau Tidak Sesuai.
-5. users belum punya status akun (aktif/nonaktif), jadi login belum bisa menolak akun nonaktif.
-6. Nama tabel dan kolom berbeda dengan ERD: users.user_id menjadi users.id; tabel mahasiswa digabung ke users; persyaratan_layanan menjadi syarat_layanan; dokumen_pengajuan menjadi berkas_pengajuan; surat menjadi surat_resmi; pengaturan_tte menjadi config_tte; pengajuan.catatan_terakhir menjadi catatan_revisi.
+Perbedaan dengan ERD A3 dan docs lain
+1. Status pengajuan: ENUM database dipakai apa adanya. docs/alur-status.md memetakan nilai database ke label antarmuka (misalnya pending_kakor/pending_wadek1/pending_dekan tampil "Menunggu Persetujuan", disetujui tampil "Selesai"). Pemetaan ini sudah disetujui tim (24 November 2026); bila ternyata perlu diubah, perbaiki di sini dan di alur-status.md.
+2. Status draf surat, nilai 'returned' untuk "Kembalikan dengan catatan", verifikasi per dokumen, dan status akun sudah ditambahkan lewat migrasi 002.
+3. Nama tabel dan kolom berbeda dengan ERD: users.user_id menjadi users.id; tabel mahasiswa digabung ke users; persyaratan_layanan menjadi syarat_layanan; dokumen_pengajuan menjadi berkas_pengajuan; surat menjadi surat_resmi; pengaturan_tte menjadi config_tte; pengajuan.catatan_terakhir menjadi catatan_revisi.
 
 Aturan data
 Mahasiswa hanya boleh mengakses baris miliknya sendiri (pengajuan, berkas, surat, notifikasi, profil).

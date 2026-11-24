@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { Eye, EyeOff, GraduationCap, ShieldAlert } from 'lucide-react'
-import { loginRequest } from '../../services/api.js'
+import { loginRequest, loginUjiRequest } from '../../services/api.js'
+
+// Tombol login pintasan hanya ada saat client dijalankan dengan "npm run dev" (tidak ikut di hasil build).
+// Server juga harus menyalakan LOGIN_UJI=aktif di server/.env.
+const LOGIN_PINTASAN = import.meta.env.DEV
+const PERAN_UJI = [
+  { role: 'mahasiswa', label: 'Mahasiswa' },
+  { role: 'staf', label: 'Staf Akademik' },
+  { role: 'kakor', label: 'Kepala Kantor' },
+  { role: 'wadek1', label: 'Wakil Dekan 1' },
+  { role: 'dekan', label: 'Dekan' },
+]
 
 // Halaman Login untuk semua peran. sessionMessage berisi alasan bila sesi sebelumnya berakhir.
 export function LoginPage({ sessionMessage, onLogin }) {
@@ -24,10 +35,19 @@ export function LoginPage({ sessionMessage, onLogin }) {
     setNotice(null)
     if (!validate()) return
 
+    await masuk(() => loginRequest(identifier.trim(), password))
+  }
+
+  // request = fungsi yang mengembalikan fetch login (biasa atau pintasan uji).
+  const masuk = async (request) => {
+    setNotice(null)
     setIsLoading(true)
     try {
-      const response = await loginRequest(identifier.trim(), password)
+      const response = await request()
       const result = await response.json().catch(() => null)
+      if (LOGIN_PINTASAN && response.status === 404 && !result) {
+        throw new Error('Login pintasan belum aktif. Isi LOGIN_UJI=aktif di server/.env, lalu jalankan ulang server.')
+      }
 
       if (!response.ok || !result?.success) {
         throw new Error(result?.message || 'Server tidak dapat dihubungi. Coba lagi beberapa saat lagi.')
@@ -97,6 +117,16 @@ export function LoginPage({ sessionMessage, onLogin }) {
             {isLoading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
+        {LOGIN_PINTASAN && (
+          <div className="login-uji" aria-label="Login pintasan untuk pengujian">
+            <p>Login pintasan (khusus pengujian lokal)</p>
+            <div>
+              {PERAN_UJI.map((item) => (
+                <button type="button" key={item.role} disabled={isLoading} onClick={() => masuk(() => loginUjiRequest(item.role))}>{item.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
         <button type="button" className="forgot-button" onClick={() => setNotice({ type: 'info', message: 'Silakan hubungi Staf Akademik untuk mereset kata sandi.' })}>Lupa kata sandi?</button>
       </section>
       <p className="help-text">Gunakan NIM/NIP atau email akun Anda. Dashboard akan ditentukan oleh peran yang terdaftar.</p>

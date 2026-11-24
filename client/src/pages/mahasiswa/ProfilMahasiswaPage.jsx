@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Eye, EyeOff, LockKeyhole } from 'lucide-react'
+import { bacaHasil, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
+import { teksSemester } from '../../utils/semester.js'
 
-// Profil mahasiswa: data akademik hanya baca, ubah kontak, ganti kata sandi (belum tersambung ke server).
+// Profil mahasiswa: data akademik hanya baca, ubah kontak, ganti kata sandi.
 export function ProfilMahasiswaPage({ user, onUpdateUser }) {
   const [notice, setNotice] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [profileEmail, setProfileEmail] = useState(user.email || '')
   const [profilePhone, setProfilePhone] = useState(user.no_hp || '')
   const [currentPassword, setCurrentPassword] = useState('')
@@ -14,13 +17,21 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
   const passwordCriteria = [newPassword.length >= 8, /[A-Z]/.test(newPassword), /[a-z]/.test(newPassword), /[0-9]/.test(newPassword), /[^A-Za-z0-9]/.test(newPassword)]
   const passwordStrength = passwordCriteria.filter(Boolean).length
 
-  const saveProfile = (event) => {
+  const saveProfile = async (event) => {
     event.preventDefault()
-    onUpdateUser({ ...user, email: profileEmail.trim(), no_hp: profilePhone.trim() })
-    setNotice({ type: 'info', message: 'Perubahan tersimpan di browser ini. Sinkronisasi ke server belum tersedia.' })
+    setSaving(true)
+    try {
+      const profil = await bacaHasil(await ubahKontakRequest({ email: profileEmail.trim(), no_hp: profilePhone.trim() }))
+      onUpdateUser({ ...user, email: profil.email, no_hp: profil.no_hp })
+      setNotice({ type: 'success', message: 'Informasi kontak berhasil disimpan.' })
+    } catch (galat) {
+      setNotice({ type: 'error', message: galat.message })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const changePassword = (event) => {
+  const changePassword = async (event) => {
     event.preventDefault()
     if (!currentPassword || !newPassword || !confirmPassword) {
       setNotice({ type: 'error', message: 'Lengkapi semua kolom kata sandi terlebih dahulu.' })
@@ -34,10 +45,18 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
       setNotice({ type: 'error', message: 'Konfirmasi kata sandi baru tidak cocok.' })
       return
     }
-    setNotice({ type: 'info', message: 'Validasi berhasil, tetapi fitur ubah kata sandi belum terhubung ke server.' })
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
+    setSaving(true)
+    try {
+      await bacaHasil(await ubahKataSandiRequest({ kata_sandi_lama: currentPassword, kata_sandi_baru: newPassword }))
+      setNotice({ type: 'success', message: 'Kata sandi berhasil diubah. Gunakan kata sandi baru saat masuk berikutnya.' })
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (galat) {
+      setNotice({ type: 'error', message: galat.message })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -53,10 +72,10 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
                   <div className="profile-readonly-field"><label htmlFor="profile-name">Nama</label><div><input id="profile-name" value={user.nama || ''} readOnly /><LockKeyhole size={15} /></div><small>Data akademik · hanya baca</small></div>
                   <div className="profile-readonly-field"><label htmlFor="profile-identifier">NIM</label><div><input id="profile-identifier" value={user.identifier || ''} readOnly /><LockKeyhole size={15} /></div><small>Data akademik · hanya baca</small></div>
                   <div className="profile-readonly-field"><label htmlFor="profile-program">Program Studi</label><div><input id="profile-program" value={user.prodi || 'Belum diatur'} readOnly /><LockKeyhole size={15} /></div><small>Data akademik · hanya baca</small></div>
-                  <div className="profile-readonly-field"><label htmlFor="profile-semester">Semester</label><div><input id="profile-semester" value="Ganjil 2026/2027" readOnly /><LockKeyhole size={15} /></div><small>Data akademik · hanya baca</small></div>
+                  <div className="profile-readonly-field"><label htmlFor="profile-semester">Semester</label><div><input id="profile-semester" value={teksSemester(user.angkatan)} readOnly /><LockKeyhole size={15} /></div><small>Data akademik · hanya baca</small></div>
                   <label className="profile-contact-card" htmlFor="profile-email"><span>Email <b>*</b></span><input id="profile-email" type="email" autoComplete="email" required value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} /></label>
                   <label className="profile-contact-card" htmlFor="profile-phone"><span>Nomor Telepon/WhatsApp <b>*</b></span><input id="profile-phone" type="tel" autoComplete="tel" required value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} /></label>
-                  <button type="submit" className="primary-button">Simpan Perubahan</button>
+                  <button type="submit" className="primary-button" disabled={saving}>Simpan Perubahan</button>
                 </form>
               </section>
               <section className="profile-section profile-security">
@@ -70,7 +89,7 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
                     { key: 'confirm', label: 'Konfirmasi Kata Sandi Baru', placeholder: 'Ulangi kata sandi baru', value: confirmPassword, update: setConfirmPassword, autoComplete: 'new-password' },
                   ].map((field) => <label className="profile-password-card" htmlFor={`password-${field.key}`} key={field.key}><span>{field.label} <b>*</b></span><span className="profile-password-input"><input id={`password-${field.key}`} type={visiblePasswords[field.key] ? 'text' : 'password'} autoComplete={field.autoComplete} placeholder={field.placeholder} value={field.value} onChange={(event) => field.update(event.target.value)} /><button type="button" aria-label={visiblePasswords[field.key] ? `Sembunyikan ${field.label.toLowerCase()}` : `Tampilkan ${field.label.toLowerCase()}`} onClick={() => setVisiblePasswords((current) => ({ ...current, [field.key]: !current[field.key] }))}>{visiblePasswords[field.key] ? <Eye size={16} /> : <EyeOff size={16} />}</button></span></label>)}
                   <div className="password-strength" aria-label={`Kekuatan kata sandi: ${passwordStrength} dari 5`}><div>{passwordCriteria.map((passed, index) => <span className={passed ? 'passed' : ''} key={index} />)}</div><p>Kekuatan kata sandi: {passwordStrength === 0 ? 'Belum diisi' : passwordStrength < 3 ? 'Lemah' : passwordStrength < 5 ? 'Cukup' : 'Kuat'}</p></div>
-                  <button type="submit" className="outline-button profile-password-submit">Ubah Kata Sandi</button>
+                  <button type="submit" className="outline-button profile-password-submit" disabled={saving}>Ubah Kata Sandi</button>
                 </form>
               </section>
             </div>

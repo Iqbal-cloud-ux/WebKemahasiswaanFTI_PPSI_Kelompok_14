@@ -207,6 +207,7 @@
 .profile-feedback { margin: -7px 0 18px; padding: 11px 13px; border: 1px solid; border-radius: 5px; font-size: 11px; line-height: 1.5; }
 .profile-feedback.info { border-color: #cfe0ff; color: #2860c4; background: #f1f6ff; }
 .profile-feedback.error { border-color: #f4cccc; color: #a52e32; background: #fff0f0; }
+.profile-feedback.success { border-color: #9bd5b2; color: #126d3a; background: #f5fff8; }
 .profile-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 24px; }
 .profile-section { min-width: 0; }
 .profile-section h2 { margin: 0 0 14px; color: #172033; font-size: 15px; }
@@ -243,4 +244,46 @@
 .flow-actions .outline-button { margin-top: 0; }
 @media (max-width: 700px) {
   .submission-heading { margin-top: 6px; }
+}
+
+/* Formulir pengajuan tersambung server: layanan yang belum boleh diajukan, tarik-dan-lepas berkas, galat per berkas. */
+.service-choice small + small { margin-top: 6px; }
+.service-choice:disabled, .service-choice.blocked { cursor: not-allowed; opacity: .7; background: #f6f7f8; }
+.service-choice:disabled:hover { border-color: #dfe7ec; background: #f6f7f8; }
+.service-choice .service-choice-reason { color: #a52e32; }
+.document-upload.dragging { border-style: dashed; border-color: #168043; background: #f0fbf4; }
+.document-upload.invalid { border-color: #f4cccc; background: #fff7f7; }
+.document-upload .document-upload-error { color: #a52e32; }
+.document-upload > div { min-width: 0; overflow-wrap: anywhere; }
+.result-card .flow-actions { justify-content: center; flex-wrap: wrap; }
+.result-card .flow-actions .primary-button { margin: 0; }
+
+/* Detail pengajuan di Riwayat (pages/mahasiswa/DetailPengajuan.jsx) dan halaman Perbaikan. */
+.history-detail.history-detail-lengkap { display: block; }
+.history-detail-lengkap > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.history-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.history-detail-actions .small-button { display: inline-flex; align-items: center; gap: 5px; }
+.history-detail-notice { margin: 10px 0 0 !important; color: #2860c4 !important; }
+.history-detail-catatan { display: flex; gap: 8px; margin-top: 12px; padding: 10px 12px; border: 1px solid #f3d9b6; border-radius: 6px; color: #9a5416; background: #fff7eb; }
+.history-detail-catatan strong { font-size: 11px; }
+.history-detail-catatan p { margin: 3px 0 0 !important; color: #7a4a1c !important; font-size: 11px !important; line-height: 1.5; }
+.history-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px; margin-top: 16px; }
+.history-detail-grid h4 { margin: 0 0 10px; color: #172033; font-size: 12px; }
+.status-timeline { margin: 0; padding: 0; list-style: none; }
+.status-timeline li { position: relative; display: flex; gap: 10px; padding-bottom: 14px; }
+.status-timeline li:not(:last-child)::before { content: ''; position: absolute; top: 18px; bottom: 0; left: 8px; width: 1px; background: #cfe3d7; }
+.status-timeline-dot { display: grid; place-items: center; flex: 0 0 17px; height: 17px; border-radius: 50%; color: #fff; background: #168043; }
+.status-timeline strong { display: block; color: #172033; font-size: 11px; }
+.status-timeline p { margin: 2px 0 !important; font-size: 10px !important; }
+.status-timeline small { color: #75828c; font-size: 9px; }
+.history-berkas { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.history-berkas li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid #e3e9ed; border-radius: 6px; }
+.history-berkas strong, .history-berkas small { display: block; overflow-wrap: anywhere; }
+.history-berkas strong { color: #172033; font-size: 10px; }
+.history-berkas small { margin-top: 2px; color: #64727e; font-size: 9px; }
+.history-berkas .history-berkas-catatan { color: #a52e32; }
+.history-berkas .status-pill { margin: 0; }
+.history-berkas-lihat { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #cbd5da; border-radius: 5px; color: #116d38; background: #fff; cursor: pointer; }
+@media (max-width: 700px) {
+  .history-detail-grid { grid-template-columns: 1fr; }
 }

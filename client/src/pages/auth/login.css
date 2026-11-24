@@ -24,3 +24,11 @@
 .forgot-button { display: block; margin: 16px auto 0; border: 0; color: #237b4d; background: transparent; font-size: 7px; cursor: pointer; }
 .help-text { margin: 16px 0 0; color: #71818c; font-size: 7px; }
 .login-button:hover { background: #0c5d2f; }
+
+/* Login pintasan per peran, hanya tampil di mode dev (LoginPage.jsx). */
+.login-uji { margin-top: 14px; padding: 9px; border: 1px dashed #e0b84f; border-radius: 6px; background: #fffbed; }
+.login-uji p { margin: 0 0 7px; color: #8a6510; font-size: 7px; font-weight: 700; }
+.login-uji div { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.login-uji button { padding: 6px 4px; border: 1px solid #e0b84f; border-radius: 4px; color: #6b4e0c; background: #fff; font-size: 7px; cursor: pointer; }
+.login-uji button:hover { background: #fff3cf; }
+.login-uji button:disabled { opacity: .6; cursor: wait; }

@@ -1,41 +1,74 @@
-import { Check, FileText, LogOut, Send } from 'lucide-react'
-import { serviceVolumes, staffActivities, staffSubmissions } from '../../data/contohStaf.js'
+import { AlertCircle, Check, FileText, LogOut, Send } from 'lucide-react'
+import { staffActivities } from '../../data/contohStaf.js'
+import { hariSejak, keBarisStaf } from '../../utils/statusPengajuan.js'
+
+const JUMLAH_ANTREAN = 5
+const BATAS_TUNGGU_HARI = 2
+
+const hariIni = () => new Date().toDateString()
+const bulanIni = (nilai) => {
+  const tanggal = new Date(nilai)
+  const sekarang = new Date()
+  return tanggal.getFullYear() === sekarang.getFullYear() && tanggal.getMonth() === sekarang.getMonth()
+}
 
 // Beranda staf. Judul dan breadcrumb-nya dirender oleh StafPortal.
-export function BerandaStafPage({ onReview }) {
+// pengajuan = { status, data, pesan } dari StafPortal (GET /api/pengajuan).
+// Aktivitas Terbaru masih data contoh sampai rekap dan log tersambung (#102, #103).
+export function BerandaStafPage({ pengajuan, onReview }) {
+  const rows = pengajuan.data.map((item) => ({ ...keBarisStaf(item), updatedAt: item.updated_at }))
+  const siap = pengajuan.status === 'siap'
+  const hitung = (cek) => (siap ? rows.filter(cek).length : '-')
+  // Antrean: pengajuan berstatus Diajukan, yang paling lama menunggu lebih dulu.
+  const antrean = rows
+    .filter((row) => row.statusKode === 'diajukan')
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  const perLayanan = Object.entries(rows.filter((row) => bulanIni(row.createdAt)).reduce((acc, row) => ({ ...acc, [row.service]: (acc[row.service] || 0) + 1 }), {}))
+    .sort((a, b) => b[1] - a[1])
+  const totalBulanIni = perLayanan.reduce((jumlah, [, nilai]) => jumlah + nilai, 0)
+
   return (
     <>
+      {pengajuan.status === 'galat' && <div className="staff-notice error" role="alert"><AlertCircle size={16} /><span>{pengajuan.pesan}</span></div>}
       <section className="staff-stats-grid" aria-label="Ringkasan layanan">
-        <article className="staff-stat-card featured"><span>Pengajuan Baru</span><FileText size={17} /><strong>12</strong><b>Masuk hari ini</b><small>↗ 7 dari kemarin</small></article>
-        <article className="staff-stat-card"><span>Perlu Diverifikasi</span><FileText size={17} /><strong>24</strong><b>Menunggu pemeriksaan</b><small>2 pengajuan +2 hari</small></article>
-        <article className="staff-stat-card"><span>Perlu Perbaikan</span><FileText size={17} /><strong>7</strong><b>Menunggu mahasiswa</b><small>Dokumen perlu dilengkapi</small></article>
-        <article className="staff-stat-card"><span>Draf Surat Belum Dibuat</span><FileText size={17} /><strong>9</strong><b>Sudah diverifikasi</b><small>Siap disusun oleh staf</small></article>
-        <article className="staff-stat-card"><span>Selesai Bulan Ini</span><FileText size={17} /><strong>128</strong><b>Surat telah terbit</b><small>↗ 18 dari bulan lalu</small></article>
+        <article className="staff-stat-card featured"><span>Pengajuan Baru</span><FileText size={17} /><strong>{hitung((row) => new Date(row.createdAt).toDateString() === hariIni())}</strong><b>Masuk hari ini</b><small>Semua status</small></article>
+        <article className="staff-stat-card"><span>Perlu Diverifikasi</span><FileText size={17} /><strong>{hitung((row) => row.statusKode === 'diajukan')}</strong><b>Menunggu pemeriksaan</b><small>{siap ? `${antrean.filter((row) => hariSejak(row.createdAt) > BATAS_TUNGGU_HARI).length} menunggu lebih dari ${BATAS_TUNGGU_HARI} hari` : '-'}</small></article>
+        <article className="staff-stat-card"><span>Perlu Perbaikan</span><FileText size={17} /><strong>{hitung((row) => row.statusKode === 'perlu_perbaikan')}</strong><b>Menunggu mahasiswa</b><small>Dokumen perlu dilengkapi</small></article>
+        <article className="staff-stat-card"><span>Sudah Diverifikasi</span><FileText size={17} /><strong>{hitung((row) => row.statusKode === 'diverifikasi')}</strong><b>Siap disusun drafnya</b><small>Lihat menu Draf Surat</small></article>
+        <article className="staff-stat-card"><span>Selesai Bulan Ini</span><FileText size={17} /><strong>{hitung((row) => row.statusKode === 'disetujui' && bulanIni(row.updatedAt))}</strong><b>Surat telah terbit</b><small>Bulan berjalan</small></article>
       </section>
 
       <section className="staff-panel staff-queue-panel" id="staff-queue">
-        <div className="staff-panel-heading"><div><h2>Antrean Pengajuan</h2><p>5 pengajuan terbaru yang belum diproses. Dahulukan pengajuan dengan waktu tunggu lebih dari 2 hari.</p></div></div>
+        <div className="staff-panel-heading"><div><h2>Antrean Pengajuan</h2><p>{JUMLAH_ANTREAN} pengajuan terlama yang belum diperiksa. Dahulukan pengajuan dengan waktu tunggu lebih dari {BATAS_TUNGGU_HARI} hari.</p></div></div>
         <div className="staff-table-wrap">
           <table className="staff-submission-table">
             <thead><tr><th>Nomor Pengajuan</th><th>Mahasiswa / NIM</th><th>Jenis Surat</th><th>Tanggal Masuk</th><th>Status</th><th>Lama Menunggu</th><th>Aksi</th></tr></thead>
-            <tbody>{staffSubmissions.slice(0, 5).map((submission) => (
-              <tr key={submission.id}>
-                <td>{submission.id}</td>
-                <td><strong>{submission.name}</strong><span>{submission.nim}</span></td>
-                <td>{submission.service}</td>
-                <td>{submission.date}</td>
-                <td><span className="staff-submission-status"><Send size={11} /> {submission.status}</span></td>
-                <td className={submission.waiting === '3 hari' ? 'staff-waiting overdue' : 'staff-waiting'}>{submission.waiting === '3 hari' && <span>△ </span>}{submission.waiting}</td>
-                <td><button type="button" className="staff-review-button" onClick={() => onReview(submission)}><LogOut size={13} /> Periksa</button></td>
-              </tr>
-            ))}</tbody>
+            <tbody>
+              {antrean.slice(0, JUMLAH_ANTREAN).map((row) => {
+                const hari = hariSejak(row.createdAt)
+                const lewat = hari > BATAS_TUNGGU_HARI
+                return (
+                  <tr key={row.id}>
+                    <td>{row.no}</td>
+                    <td><strong>{row.name}</strong><span>{row.nim}</span></td>
+                    <td>{row.service}</td>
+                    <td>{row.date}</td>
+                    <td><span className="staff-submission-status"><Send size={11} /> {row.status}</span></td>
+                    <td className={lewat ? 'staff-waiting overdue' : 'staff-waiting'}>{lewat && <span>△ </span>}{hari === 0 ? 'Hari ini' : `${hari} hari`}</td>
+                    <td><button type="button" className="staff-review-button" onClick={() => onReview(row)}><LogOut size={13} /> Periksa</button></td>
+                  </tr>
+                )
+              })}
+              {siap && antrean.length === 0 && <tr><td className="staff-empty-results" colSpan="7">Tidak ada pengajuan yang menunggu pemeriksaan.</td></tr>}
+              {pengajuan.status === 'memuat' && <tr><td className="staff-empty-results" colSpan="7">Memuat antrean...</td></tr>}
+            </tbody>
           </table>
         </div>
       </section>
 
       <div className="staff-lower-grid">
         <section className="staff-panel staff-activity-panel">
-          <h2>Aktivitas Terbaru</h2>
+          <h2>Aktivitas Terbaru <span>(contoh)</span></h2>
           <div className="staff-activity-list">{staffActivities.map((activity) => (
             <article className="staff-activity-item" key={activity.title}>
               <span className="staff-activity-check"><Check size={14} /></span>
@@ -45,12 +78,12 @@ export function BerandaStafPage({ onReview }) {
         </section>
         <section className="staff-panel staff-services-panel">
           <h2>Pengajuan per Jenis Layanan <span>(bulan ini)</span></h2>
-          <div className="staff-service-chart">{serviceVolumes.map((service, index) => (
-            <div className="staff-service-row" key={service.name}>
-              <span>{service.name}</span><div className="staff-service-track"><i className={index === 0 ? 'primary' : ''} style={{ width: `${(service.value / serviceVolumes[0].value) * 100}%` }} /></div><strong>{service.value}</strong>
+          <div className="staff-service-chart">{perLayanan.map(([name, value], index) => (
+            <div className="staff-service-row" key={name}>
+              <span>{name}</span><div className="staff-service-track"><i className={index === 0 ? 'primary' : ''} style={{ width: `${(value / perLayanan[0][1]) * 100}%` }} /></div><strong>{value}</strong>
             </div>
           ))}</div>
-          <p className="staff-chart-caption">1–23 Oktober 2026 · 174 pengajuan</p>
+          <p className="staff-chart-caption">{totalBulanIni} pengajuan bulan ini</p>
         </section>
       </div>
     </>

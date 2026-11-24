@@ -1,11 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { login, refresh, logout } = require('../controllers/authController');
+const { login, refresh, logout, loginUji, loginUjiAktif } = require('../controllers/authController');
 const { verifyToken, checkRole } = require('../middlewares/authMiddleware');
 const { batasiLogin } = require('../middlewares/loginLimiter');
 
 // Public Route (dibatasi: 5 kali gagal per 15 menit untuk NIM/email + IP yang sama)
 router.post('/login', batasiLogin, login);
+
+// Login pintasan khusus pengujian lokal: hanya didaftarkan bila LOGIN_UJI=aktif dan bukan production.
+if (loginUjiAktif) {
+  console.warn('PERINGATAN: login pintasan pengujian (/api/auth/login-uji) AKTIF. Jangan aktifkan di server sungguhan.');
+  router.post('/login-uji', loginUji);
+}
 
 // Butuh token yang masih berlaku
 router.post('/refresh', verifyToken, refresh);

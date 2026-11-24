@@ -4,12 +4,15 @@ import { useSession } from './hooks/useSession.js'
 import { LoginPage } from './pages/auth/LoginPage.jsx'
 import { TidakDitemukanPage } from './pages/galat/TidakDitemukanPage.jsx'
 import { MahasiswaPortal } from './pages/mahasiswa/MahasiswaPortal.jsx'
+import { PimpinanPortal } from './pages/pimpinan/PimpinanPortal.jsx'
 import { PeranBelumTersediaPage } from './pages/PeranBelumTersediaPage.jsx'
 import { StafPortal } from './pages/staf/StafPortal.jsx'
 import { ROLE_LABELS, ROLE_ROUTES, homeRouteFor, normalizeRole } from './utils/roles.js'
 
 // Peran yang halamannya belum dibuat; ganti dengan portal masing-masing setelah tersedia.
-const PERAN_BELUM_TERSEDIA = ['kepala-kantor', 'wakil-dekan', 'dekan']
+const PERAN_BELUM_TERSEDIA = ['dekan']
+// Kepala Kantor dan Wakil Dekan 1 memakai portal pimpinan yang sama (#89).
+const PERAN_PIMPINAN = ['kepala-kantor', 'wakil-dekan']
 
 // App hanya mendaftarkan rute. Setiap kelompok rute dijaga PenjagaPeran (#58):
 // belum login -> Login, peran lain -> 403. Halaman tiap peran ada di pages/<peran>/.
@@ -33,8 +36,13 @@ function App() {
         <Route path="/mahasiswa/*" element={<MahasiswaPortal user={user} onUpdateUser={updateUser} onLogout={logout} />} />
       </Route>
       <Route element={<PenjagaPeran user={user} peran="staf" />}>
-        <Route path="/staf/*" element={<StafPortal user={user} onLogout={logout} />} />
+        <Route path="/staf/*" element={<StafPortal user={user} onUpdateUser={updateUser} onLogout={logout} />} />
       </Route>
+      {PERAN_PIMPINAN.map((peran) => (
+        <Route key={peran} element={<PenjagaPeran user={user} peran={peran} />}>
+          <Route path={`${ROLE_ROUTES[peran]}/*`} element={<PimpinanPortal user={user} onUpdateUser={updateUser} onLogout={logout} />} />
+        </Route>
+      ))}
       {PERAN_BELUM_TERSEDIA.map((peran) => (
         <Route key={peran} element={<PenjagaPeran user={user} peran={peran} />}>
           <Route path={`${ROLE_ROUTES[peran]}/*`} element={<PeranBelumTersediaPage user={user} roleLabel={ROLE_LABELS[peran]} onLogout={logout} />} />

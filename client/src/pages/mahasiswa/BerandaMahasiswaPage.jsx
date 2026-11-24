@@ -1,22 +1,56 @@
-import { ChevronRight, Clock3, FilePlus2, FileText } from 'lucide-react'
-import { services } from '../../data/contohMahasiswa.js'
+import { AlertCircle, ChevronRight, Clock3, FilePlus2, FileText } from 'lucide-react'
+import { sedangDiproses } from '../../utils/statusPengajuan.js'
 
-export function BerandaMahasiswaPage({ user, submissions, onApply }) {
+const JUMLAH_TERBARU = 5
+
+// Beranda mahasiswa: ringkasan pengajuan, peringatan perbaikan, pengajuan terbaru, dan katalog layanan.
+// pengajuan dan layanan berbentuk { status: 'memuat' | 'siap' | 'galat', data, pesan } dari MahasiswaPortal.
+export function BerandaMahasiswaPage({ user, pengajuan, layanan, onApply, onOpenSubmission, onPerbaiki }) {
+  const submissions = pengajuan.data
+  const perluPerbaikan = submissions.filter((item) => item.statusKode === 'perlu_perbaikan')
+  const hitung = (cek) => (pengajuan.status === 'siap' ? String(submissions.filter(cek).length) : '-')
+
   return (
     <>
       <div className="breadcrumb">Layanan Kemahasiswaan FTI / Mahasiswa</div>
-      <div className="welcome-row"><div><h1>Halo, {user.nama || 'Mahasiswa'}!</h1><p>Pantau pengajuan surat akademik Anda · Ganjil 2026/2027</p></div><button type="button" className="primary-button" onClick={() => onApply()}><FilePlus2 size={16} /> Ajukan Layanan Baru</button></div>
+      <div className="welcome-row"><div><h1>Halo, {user.nama || 'Mahasiswa'}!</h1><p>Pantau pengajuan surat akademik Anda</p></div><button type="button" className="primary-button" onClick={() => onApply()}><FilePlus2 size={16} /> Ajukan Layanan Baru</button></div>
       <section className="stats-grid" aria-label="Ringkasan pengajuan">
-        <StatCard label="Sedang Diproses" value="3" icon={<Clock3 size={15} />} />
-        <StatCard label="Perlu Perbaikan" value="1" icon={<Clock3 size={15} />} warning />
-        <StatCard label="Selesai" value="1" icon={<Clock3 size={15} />} />
-        <StatCard label="Total Pengajuan" value="5" icon={<Clock3 size={15} />} />
+        <StatCard label="Sedang Diproses" value={hitung((item) => sedangDiproses(item.statusKode))} icon={<Clock3 size={15} />} />
+        <StatCard label="Perlu Perbaikan" value={hitung((item) => item.statusKode === 'perlu_perbaikan')} icon={<Clock3 size={15} />} warning />
+        <StatCard label="Selesai" value={hitung((item) => item.statusKode === 'disetujui')} icon={<Clock3 size={15} />} />
+        <StatCard label="Total Pengajuan" value={hitung(() => true)} icon={<Clock3 size={15} />} />
       </section>
-      <section className="notice-panel"><span className="section-kicker">Perlu Perbaikan</span><div className="repair-alert"><span className="alert-mark">!</span><div><strong>Perlu Perbaikan</strong><p>Pengajuan Anda memerlukan perbaikan dokumen.</p></div></div><button type="button" className="outline-button">Perbaiki Sekarang</button></section>
-      <section className="dashboard-section" id="pengajuan"><div className="section-heading"><h2>Pengajuan Terbaru</h2></div><div className="submission-list">{submissions.map((submission) => <article className="submission-item" key={submission.id}><span className={`status-pill ${submission.tone}`}><span />{submission.status}</span><small>{submission.id}</small><h3>{submission.title}</h3><p>{submission.date} · {user.nama || 'Mahasiswa'}</p><div className="item-footer"><button type="button" className="small-button">{submission.status === 'Selesai' ? 'Unduh Surat' : 'Lihat Detail'} <ChevronRight size={14} /></button></div></article>)}</div></section>
-      <section className="dashboard-section" id="layanan"><div className="section-heading"><h2>Layanan Tersedia</h2></div><div className="service-list">{services.map((service) => <article className="service-item" key={service.title}><div className="service-icon"><FileText size={17} /></div><div className="service-copy"><h3>{service.title}</h3><p>{service.description}</p></div><span className="audience">Mahasiswa</span><button type="button" className="service-button" onClick={() => onApply(service.title)}>Ajukan</button></article>)}</div></section>
+      {perluPerbaikan.length > 0 && (
+        <section className="notice-panel">
+          <span className="section-kicker">Perlu Perbaikan</span>
+          <div className="repair-alert"><span className="alert-mark">!</span><div><strong>{perluPerbaikan.length} pengajuan perlu diperbaiki</strong><p>{perluPerbaikan[0].id} ({perluPerbaikan[0].title}){perluPerbaikan[0].catatan ? `: ${perluPerbaikan[0].catatan}` : ''}</p></div></div>
+          <button type="button" className="outline-button" onClick={() => onPerbaiki(perluPerbaikan[0].pengajuanId)}>Perbaiki Sekarang</button>
+        </section>
+      )}
+      <section className="dashboard-section" id="pengajuan">
+        <div className="section-heading"><h2>Pengajuan Terbaru</h2></div>
+        <StatusMuat state={pengajuan} kosong="Belum ada pengajuan. Pilih layanan di bawah untuk mulai mengajukan." />
+        {pengajuan.status === 'siap' && submissions.length > 0 && (
+          <div className="submission-list">{submissions.slice(0, JUMLAH_TERBARU).map((submission) => <article className="submission-item" key={submission.id}><span className={`status-pill ${submission.tone}`}><span />{submission.status}</span><small>{submission.id}</small><h3>{submission.title}</h3><p>{submission.date} · {user.nama || 'Mahasiswa'}</p><div className="item-footer"><button type="button" className="small-button" onClick={() => onOpenSubmission(submission.id)}>Lihat Detail <ChevronRight size={14} /></button></div></article>)}</div>
+        )}
+      </section>
+      <section className="dashboard-section" id="layanan">
+        <div className="section-heading"><h2>Layanan Tersedia</h2></div>
+        <StatusMuat state={layanan} kosong="Belum ada layanan yang dibuka." />
+        {layanan.status === 'siap' && (
+          <div className="service-list">{layanan.data.map((item) => <article className="service-item" key={item.id}><div className="service-icon"><FileText size={17} /></div><div className="service-copy"><h3>{item.nama_layanan}</h3><p>{item.deskripsi}</p></div><span className="audience">Mahasiswa</span><button type="button" className="service-button" onClick={() => onApply(item.id)}>Ajukan</button></article>)}</div>
+        )}
+      </section>
     </>
   )
+}
+
+// Pesan saat data masih dimuat, gagal dimuat, atau kosong.
+export function StatusMuat({ state, kosong }) {
+  if (state.status === 'memuat') return <p className="muted-copy" role="status">Memuat data...</p>
+  if (state.status === 'galat') return <div className="flow-error" role="alert"><AlertCircle size={15} />{state.pesan}</div>
+  if (state.data.length === 0) return <p className="muted-copy">{kosong}</p>
+  return null
 }
 
 function StatCard({ label, value, icon, warning = false }) {

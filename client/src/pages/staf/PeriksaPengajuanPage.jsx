@@ -1,39 +1,100 @@
-import { useState } from 'react'
-import { Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, ExternalLink, FileText, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { AlertCircle, Check, CheckCircle2, ChevronLeft, Eye, FileText, X } from 'lucide-react'
+import { PratinjauBerkas } from '../../components/PratinjauBerkas.jsx'
+import { bacaHasil, detailPengajuanRequest, periksaPengajuanRequest } from '../../services/api.js'
+import { formatWaktu, statusStaf } from '../../utils/statusPengajuan.js'
+import { teksSemester } from '../../utils/semester.js'
 
-export function PeriksaPengajuanPage({ submission, onClose }) {
-  const [documents, setDocuments] = useState({
-    krs: 'sesuai',
-    ktm: 'sesuai',
-  })
+const KEPUTUSAN = {
+  verifikasi: { tombol: 'Verifikasi', kelas: 'staff-review-verify' },
+  perbaikan: { tombol: 'Minta Perbaikan', kelas: 'staff-review-correction' },
+  tolak: { tombol: 'Tolak', kelas: 'staff-review-reject' },
+}
+
+// Periksa dan verifikasi satu pengajuan (#71, #72, #74). Data diambil dari GET /api/pengajuan/:id;
+// keputusan dikirim ke POST /api/pengajuan/:id/pemeriksaan. onSelesai memuat ulang daftar di StafPortal.
+export function PeriksaPengajuanPage({ pengajuanId, onClose, onSelesai }) {
+  const [detail, setDetail] = useState({ status: 'memuat', data: null, pesan: '' })
+  const [versi, setVersi] = useState(0)
+  const [hasilBerkas, setHasilBerkas] = useState({}) // id berkas -> { status_verifikasi, catatan }
   const [note, setNote] = useState('')
-  const [feedback, setFeedback] = useState('')
+  const [feedback, setFeedback] = useState(null)
+  const [sending, setSending] = useState(false)
+  const [pratinjau, setPratinjau] = useState(null)
 
-  const setDocumentStatus = (key, status) => {
-    setDocuments((current) => ({ ...current, [key]: status }))
+  useEffect(() => {
+    let aktif = true
+    detailPengajuanRequest(pengajuanId)
+      .then(bacaHasil)
+      .then((data) => {
+        if (!aktif) return
+        setDetail({ status: 'siap', data, pesan: '' })
+        // Tanda awal mengikuti hasil pemeriksaan sebelumnya (misalnya berkas yang sudah sesuai sebelum perbaikan).
+        setHasilBerkas(Object.fromEntries(data.berkas.map((b) => [b.id, {
+          status_verifikasi: b.status_verifikasi === 'belum_diperiksa' ? '' : b.status_verifikasi,
+          catatan: b.catatan_verifikasi || '',
+        }])))
+      })
+      .catch((galat) => { if (aktif) setDetail({ status: 'galat', data: null, pesan: galat.message }) })
+    return () => { aktif = false }
+  }, [pengajuanId, versi])
+
+  const tutupPratinjau = useCallback(() => setPratinjau(null), [])
+
+  if (detail.status !== 'siap') {
+    return (
+      <>
+        <div className="staff-review-heading">
+          <div className="staff-breadcrumb">Layanan Kemahasiswaan FTI <span>/</span> Daftar Pengajuan</div>
+          <h1>Periksa &amp; Verifikasi Pengajuan</h1>
+          <div className="staff-review-meta"><button type="button" onClick={onClose}><ChevronLeft size={14} /> Kembali</button></div>
+        </div>
+        {detail.status === 'memuat'
+          ? <div className="staff-access-message" role="status"><span className="staff-spinner" /> Memuat pengajuan...</div>
+          : <div className="staff-notice error" role="alert"><AlertCircle size={16} /><span>{detail.pesan}</span></div>}
+      </>
+    )
   }
 
-  const submitDecision = (decision) => {
-    const incomplete = Object.values(documents).some((status) => status !== 'sesuai')
-    if (decision === 'Perbaikan' && !note.trim()) {
-      setFeedback('Tambahkan catatan perbaikan sebelum mengembalikan pengajuan.')
-      return
-    }
-    if (decision === 'Verifikasi' && incomplete) {
-      setFeedback('Seluruh dokumen harus dinyatakan sesuai sebelum diverifikasi.')
-      return
-    }
-    setFeedback(decision === 'Tolak'
-      ? 'Pengajuan ditolak. Status pengajuan telah diperbarui.'
-      : decision === 'Perbaikan'
-        ? 'Pengajuan dikembalikan kepada mahasiswa untuk diperbaiki.'
-        : 'Pengajuan berhasil diverifikasi dan siap diproses lebih lanjut.')
-  }
+  const data = detail.data
+  const bisaDiperiksa = data.status === 'diajukan'
+  const status = statusStaf(data.status)
 
-  const documentItems = [
-    { key: 'krs', title: 'Kartu Rencana Studi', subtitle: 'Surat Mahasiswa', size: '1,2 MB', action: 'Dokumen wajib', filename: 'KRS_Ganjil_2026.pdf' },
-    { key: 'ktm', title: 'Kartu Rencana Studi', subtitle: 'Surat Mahasiswa', size: '840 KB', action: 'Dokumen wajib', filename: 'KRS_Ganjil_2026.pdf' },
-  ]
+  const ubahBerkas = (id, nilai) => setHasilBerkas((current) => ({ ...current, [id]: { ...current[id], ...nilai } }))
+  const tandaiSemuaSesuai = () => setHasilBerkas((current) => Object.fromEntries(Object.entries(current).map(([id, nilai]) => [id, { ...nilai, status_verifikasi: 'sesuai' }])))
+
+  const submitDecision = async (keputusan) => {
+    const belumDitandai = data.berkas.filter((b) => !hasilBerkas[b.id]?.status_verifikasi)
+    if (keputusan === 'verifikasi' && belumDitandai.length > 0) {
+      return setFeedback({ type: 'error', message: `Tandai semua dokumen terlebih dahulu. Belum ditandai: ${belumDitandai.map((b) => b.nama_syarat).join(', ')}.` })
+    }
+    if (keputusan === 'verifikasi' && data.berkas.some((b) => hasilBerkas[b.id]?.status_verifikasi !== 'sesuai')) {
+      return setFeedback({ type: 'error', message: 'Semua dokumen harus dinyatakan Sesuai sebelum diverifikasi. Gunakan Minta Perbaikan bila ada dokumen yang tidak sesuai.' })
+    }
+    if (keputusan !== 'verifikasi' && !note.trim()) {
+      return setFeedback({ type: 'error', message: keputusan === 'tolak' ? 'Tuliskan alasan penolakan pada kolom catatan.' : 'Tuliskan catatan perbaikan untuk mahasiswa pada kolom catatan.' })
+    }
+    if (keputusan === 'tolak' && !window.confirm('Tolak pengajuan ini? Penolakan bersifat akhir dan mahasiswa harus membuat pengajuan baru.')) return
+
+    setSending(true)
+    setFeedback(null)
+    try {
+      const berkas = data.berkas
+        .filter((b) => hasilBerkas[b.id]?.status_verifikasi)
+        .map((b) => ({ id: b.id, status_verifikasi: hasilBerkas[b.id].status_verifikasi, catatan: hasilBerkas[b.id].catatan }))
+      const response = await periksaPengajuanRequest(data.id, { keputusan, catatan: note.trim(), berkas })
+      const pesan = (await response.clone().json().catch(() => null))?.message
+      await bacaHasil(response)
+      setFeedback({ type: 'success', message: `${pesan || 'Keputusan tersimpan'}. Mahasiswa sudah menerima notifikasi.` })
+      setNote('')
+      setVersi((v) => v + 1)
+      onSelesai()
+    } catch (galat) {
+      setFeedback({ type: 'error', message: galat.message })
+    } finally {
+      setSending(false)
+    }
+  }
 
   return (
     <>
@@ -41,14 +102,15 @@ export function PeriksaPengajuanPage({ submission, onClose }) {
         <div className="staff-breadcrumb">Layanan Kemahasiswaan FTI <span>/</span> Daftar Pengajuan</div>
         <h1>Periksa &amp; Verifikasi Pengajuan</h1>
         <div className="staff-review-meta">
-          <strong>{submission?.id || 'PGJ-2026-0186'}</strong>
-          <span className="staff-review-status"><CheckCircle2 size={11} /> {submission?.status || 'Diajukan'}</span>
-          <span>Diajukan {submission?.date || '20 Oktober 2026'}, 08.15 WIB</span>
+          <strong>{data.no_referensi}</strong>
+          <span className={`staff-submission-status status-${status.kelas}`}>{status.label}</span>
+          <span>Diajukan {formatWaktu(data.created_at)}</span>
           <button type="button" onClick={onClose} aria-label="Kembali ke daftar pengajuan"><ChevronLeft size={14} /> Kembali</button>
         </div>
       </div>
 
-      {feedback && <div className="staff-notice success staff-review-feedback" role="status"><CheckCircle2 size={16} /><span>{feedback}</span><button type="button" onClick={() => setFeedback('')} aria-label="Tutup pesan"><X size={15} /></button></div>}
+      {feedback && <div className={`staff-notice ${feedback.type} staff-review-feedback`} role={feedback.type === 'error' ? 'alert' : 'status'}>{feedback.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}<span>{feedback.message}</span><button type="button" onClick={() => setFeedback(null)} aria-label="Tutup pesan"><X size={15} /></button></div>}
+      {!bisaDiperiksa && <div className="staff-notice info" role="status"><span>Pengajuan ini berstatus {status.label}. Pemeriksaan berkas hanya bisa dilakukan saat status Diajukan.</span></div>}
 
       <div className="staff-review-layout">
         <div className="staff-review-main">
@@ -56,85 +118,97 @@ export function PeriksaPengajuanPage({ submission, onClose }) {
             <h2>Data Pemohon</h2>
             <div className="staff-review-applicant-grid">
               <dl>
-                <div><dt>Identitas akademik</dt><dd /></div>
-                <div><dt>Nama</dt><dd>{submission?.name || '-'}</dd></div>
-                <div><dt>NIM</dt><dd>{submission?.nim || '-'}</dd></div>
-                <div><dt>Program Studi</dt><dd>Sistem Informasi</dd></div>
-                <div><dt>Semester</dt><dd>Ganjil 2026/2027</dd></div>
+                <div><dt>Nama</dt><dd>{data.mahasiswa.nama}</dd></div>
+                <div><dt>NIM</dt><dd>{data.mahasiswa.nim}</dd></div>
+                <div><dt>Program Studi</dt><dd>{data.mahasiswa.prodi || '-'}</dd></div>
+                <div><dt>Semester</dt><dd>{teksSemester(data.mahasiswa.angkatan)}</dd></div>
+                <div><dt>Layanan</dt><dd>{data.layanan.nama_layanan}</dd></div>
+                <div><dt>Keperluan</dt><dd>{data.keperluan}</dd></div>
+                {data.catatan_revisi && <div><dt>Catatan terakhir untuk mahasiswa</dt><dd>{data.catatan_revisi}</dd></div>}
               </dl>
             </div>
           </section>
 
           <section className="staff-panel staff-review-documents">
             <div className="staff-review-documents-heading">
-              <div><h2>Dokumen Persyaratan</h2><p>Tandai dokumen telah diperiksa dan dinyatakan sesuai.</p></div>
-              <button type="button" onClick={() => setDocuments({ krs: 'sesuai', ktm: 'sesuai' })}><RefreshIcon /> Diperiksa</button>
+              <div><h2>Dokumen Persyaratan</h2><p>{bisaDiperiksa ? 'Buka setiap dokumen, lalu tandai Sesuai atau Tidak Sesuai.' : 'Hasil pemeriksaan dokumen.'}</p></div>
+              {bisaDiperiksa && data.berkas.length > 0 && <button type="button" onClick={tandaiSemuaSesuai}><Check size={13} /> Tandai semua sesuai</button>}
             </div>
 
-            {documentItems.map((document) => (
-              <article className="staff-review-document" key={document.key}>
-                <div className="staff-review-document-name">
-                  <span className="staff-review-file-icon"><FileText size={15} /></span>
-                  <div><strong>{document.title}</strong><small>{document.subtitle}</small></div>
-                  <span>{document.size}</span>
-                </div>
-                <div className="staff-review-document-actions">
-                  <span className="staff-review-document-note">{document.action} <small>{document.filename}</small></span>
-                  <div className="staff-review-radio-group" role="radiogroup" aria-label={`Status ${document.title}`}>
-                    <label><input type="radio" name={`document-${document.key}`} checked={documents[document.key] === 'sesuai'} onChange={() => setDocumentStatus(document.key, 'sesuai')} /><span>Sesuai</span></label>
-                    <label><input type="radio" name={`document-${document.key}`} checked={documents[document.key] === 'tidak-sesuai'} onChange={() => setDocumentStatus(document.key, 'tidak-sesuai')} /><span>Tidak Sesuai</span></label>
+            {data.berkas.length === 0 && <p className="staff-review-empty">Layanan ini tidak memerlukan dokumen pendukung.</p>}
+            {data.berkas.map((berkas) => {
+              const nilai = hasilBerkas[berkas.id] || {}
+              return (
+                <article className="staff-review-document" key={berkas.id}>
+                  <div className="staff-review-document-name">
+                    <span className="staff-review-file-icon"><FileText size={15} /></span>
+                    <div><strong>{berkas.nama_syarat}</strong><small>{berkas.original_name}</small></div>
+                    <button type="button" className="staff-review-open" onClick={() => setPratinjau(berkas)}><Eye size={13} /> Lihat</button>
                   </div>
-                  <label className="staff-review-document-note-field">
-                    <span>Catatan pemeriksaan dokumen</span>
-                    <input type="text" placeholder="Identifikasi dokumen yang perlu diperbaiki" value={documents[`${document.key}Note`] || ''} onChange={(event) => setDocuments((current) => ({ ...current, [`${document.key}Note`]: event.target.value }))} />
-                  </label>
-                </div>
-              </article>
-            ))}
+                  <div className="staff-review-document-actions">
+                    <div className="staff-review-radio-group" role="radiogroup" aria-label={`Status ${berkas.nama_syarat}`}>
+                      <label><input type="radio" name={`document-${berkas.id}`} disabled={!bisaDiperiksa} checked={nilai.status_verifikasi === 'sesuai'} onChange={() => ubahBerkas(berkas.id, { status_verifikasi: 'sesuai' })} /><span>Sesuai</span></label>
+                      <label><input type="radio" name={`document-${berkas.id}`} disabled={!bisaDiperiksa} checked={nilai.status_verifikasi === 'tidak_sesuai'} onChange={() => ubahBerkas(berkas.id, { status_verifikasi: 'tidak_sesuai' })} /><span>Tidak Sesuai</span></label>
+                    </div>
+                    <label className="staff-review-document-note-field">
+                      <span>Catatan dokumen (tampil ke mahasiswa)</span>
+                      <input type="text" maxLength={1000} disabled={!bisaDiperiksa} placeholder="Contoh: tanda tangan Pembimbing Akademik belum ada" value={nilai.catatan || ''} onChange={(event) => ubahBerkas(berkas.id, { catatan: event.target.value })} />
+                    </label>
+                  </div>
+                </article>
+              )
+            })}
 
-            <div className="staff-review-decision-note">
-              <span>Catatan pemeriksaan dokumen</span>
-              <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Tambahkan catatan pemeriksaan atau perbaikan..." />
-            </div>
+            {bisaDiperiksa && (
+              <div className="staff-review-decision-note">
+                <label htmlFor="catatan-pemeriksaan">Catatan untuk mahasiswa (wajib untuk Minta Perbaikan dan Tolak)</label>
+                <textarea id="catatan-pemeriksaan" maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Jelaskan apa yang perlu diperbaiki, atau alasan penolakan..." />
+              </div>
+            )}
           </section>
         </div>
 
         <aside className="staff-review-aside">
           <section className="staff-panel staff-review-checklist">
-            <h2>Hasil Pemeriksaan Otomatis</h2>
-            <strong>3 pemeriksaan lolos</strong>
+            <h2>Ringkasan Pemeriksaan</h2>
+            <strong>{data.berkas.filter((b) => hasilBerkas[b.id]?.status_verifikasi === 'sesuai').length} dari {data.berkas.length} dokumen sesuai</strong>
             <ul>
-              <li>NRV terdaftar dan berstatus aktif</li>
-              <li>Format dan ukuran dokumen sesuai</li>
-              <li>Seluruh dokumen wajib ditunggu</li>
+              <li>Format dan ukuran berkas sudah diperiksa sistem saat diunggah (PDF/JPG/PNG, maks. 5 MB).</li>
+              <li>Dokumen wajib sudah lengkap saat pengajuan dikirim.</li>
+              <li>Keaslian dan isi dokumen diperiksa oleh Staf Akademik.</li>
             </ul>
-            <button type="button"><ExternalLink size={13} /> Lihat Lengkapan <ChevronRight size={13} /></button>
           </section>
 
           <section className="staff-panel staff-review-timeline">
             <h2>Riwayat Pengajuan</h2>
             <ol>
-              <li className="done"><span><Check size={11} /></span><div><strong>Pengajuan diterima</strong><p>Pengajuan {submission?.id || 'PGJ-2026-0186'} berhasil dikirim.</p><small>{submission?.date || '20 Okt 2026'}, 08.15 WIB</small></div></li>
-              <li className="done"><span><Check size={11} /></span><div><strong>Pemeriksaan otomatis selesai</strong><p>Kelengkapan dokumen telah diperiksa.</p><small>{submission?.date || '20 Okt 2026'}, 08.16 WIB</small></div></li>
-              <li className="current"><span><Clock3 size={11} /></span><div><strong>Verifikasi Staff Akademik</strong><p>Menunggu verifikasi Staf Akademik.</p><small>Belum diproses</small></div></li>
-              <li><span /> <div><strong>Persetujuan Kepala Kantor</strong><p>Menunggu hasil verifikasi staf.</p><small>Belum diproses</small></div></li>
+              {data.riwayat.map((item) => (
+                <li className="done" key={item.id}>
+                  <span><Check size={11} /></span>
+                  <div>
+                    <strong>{statusStaf(item.status_baru).label}</strong>
+                    <p>{item.status_sebelumnya ? `Dari ${statusStaf(item.status_sebelumnya).label}` : 'Pengajuan dikirim'}{item.pelaku_nama ? ` oleh ${item.pelaku_nama}` : ''}.{item.catatan ? ` Catatan: ${item.catatan}` : ''}</p>
+                    <small>{formatWaktu(item.created_at)}</small>
+                  </div>
+                </li>
+              ))}
             </ol>
           </section>
         </aside>
       </div>
 
-      <div className="staff-review-actions">
-        <p>Selesaikan pemeriksaan sesuai dokumen yang diajukan.</p>
-        <div>
-          <button type="button" className="staff-review-reject" onClick={() => submitDecision('Tolak')}>Tolak</button>
-          <button type="button" className="staff-review-correction" onClick={() => submitDecision('Perbaikan')}>Minta Perbaikan</button>
-          <button type="button" className="staff-review-verify" onClick={() => submitDecision('Verifikasi')}>Verifikasi</button>
+      {bisaDiperiksa && (
+        <div className="staff-review-actions">
+          <p>Selesaikan pemeriksaan sesuai dokumen yang diajukan.</p>
+          <div>
+            {['tolak', 'perbaikan', 'verifikasi'].map((keputusan) => (
+              <button type="button" key={keputusan} className={KEPUTUSAN[keputusan].kelas} disabled={sending} onClick={() => submitDecision(keputusan)}>{KEPUTUSAN[keputusan].tombol}</button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {pratinjau && <PratinjauBerkas berkas={pratinjau} onClose={tutupPratinjau} />}
     </>
   )
-}
-
-function RefreshIcon() {
-  return <span className="staff-review-refresh-mark" aria-hidden="true">↻</span>
 }

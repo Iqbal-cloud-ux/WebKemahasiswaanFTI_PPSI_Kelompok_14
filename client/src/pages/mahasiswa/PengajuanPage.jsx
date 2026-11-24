@@ -1,71 +1,180 @@
 import { useState } from 'react'
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, FileText, Upload } from 'lucide-react'
-import { services } from '../../data/contohMahasiswa.js'
+import { bacaHasil, kirimPengajuanRequest } from '../../services/api.js'
+import { ACCEPT_BERKAS, periksaBerkas, ukuranTampil } from '../../utils/berkas.js'
+import { StatusMuat } from './BerandaMahasiswaPage.jsx'
 
-const EMPTY_SUBMISSION = { purpose: '', phone: '', files: {}, confirmation: false }
-
-// Nomor sementara di peramban. Nanti dibuat server (#62); format resmi [BELUM FINAL].
-const buatNomorSementara = () => `PGJ-2026-${String(Date.now()).slice(-5)}`
+const LANGKAH = ['Pilih Layanan', 'Isi Formulir & Unggah Dokumen', 'Tinjau & Kirim']
 
 // Formulir pengajuan 3 langkah: Pilih Layanan, Isi Formulir & Unggah Dokumen, Tinjau & Kirim.
-// initialService terisi bila mahasiswa menekan "Ajukan" pada katalog layanan di Beranda.
-export function PengajuanPage({ user, initialService = '', onCancel }) {
-  const [selectedService, setSelectedService] = useState(initialService)
-  const [submissionStep, setSubmissionStep] = useState(1)
-  const [submissionData, setSubmissionData] = useState(EMPTY_SUBMISSION)
-  const [submissionResult, setSubmissionResult] = useState(null)
+// layanan = { status, data, pesan } dari MahasiswaPortal; initialLayananId terisi bila mahasiswa
+// menekan "Ajukan" pada katalog layanan di Beranda.
+export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel, onSubmitted, onOpenHistory }) {
+  const [selectedId, setSelectedId] = useState(initialLayananId)
+  const [step, setStep] = useState(1)
+  const [keperluan, setKeperluan] = useState('')
+  const [noHp, setNoHp] = useState(user.no_hp || '')
+  const [files, setFiles] = useState({}) // id syarat -> File
+  const [fileErrors, setFileErrors] = useState({}) // id syarat -> pesan
+  const [dragOver, setDragOver] = useState(null)
+  const [confirmation, setConfirmation] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState(null)
 
-  const selectedServiceData = services.find((service) => service.title === selectedService)
-  const updateSubmission = (field, value) => setSubmissionData((current) => ({ ...current, [field]: value }))
-  const uploadDocument = (documentName, file) => {
-    if (file) updateSubmission('files', { ...submissionData.files, [documentName]: file.name })
+  const selected = layanan.data.find((item) => item.id === selectedId)
+  const selectedAllowed = selected && selected.kelayakan?.boleh !== false
+  const syarat = selected?.syarat || []
+  const missingRequired = syarat.filter((item) => item.is_required && !files[item.id])
+
+  const chooseFile = (item, file) => {
+    if (!file) return
+    const problem = periksaBerkas(file)
+    setFileErrors((current) => ({ ...current, [item.id]: problem }))
+    if (!problem) setFiles((current) => ({ ...current, [item.id]: file }))
   }
 
-  const submitApplication = () => {
-    if (!submissionData.confirmation) {
-      setSubmissionResult({ type: 'error', title: 'Pengajuan gagal dikirim', message: 'Centang pernyataan bahwa data dan dokumen yang diunggah sudah benar.' })
-      return
+  const chooseService = (item) => {
+    if (item.kelayakan?.boleh === false) return
+    if (item.id !== selectedId) {
+      setFiles({})
+      setFileErrors({})
     }
-
-    const missingDocuments = (selectedServiceData?.documents || []).filter((document) => !submissionData.files[document])
-    if (missingDocuments.length > 0) {
-      setSubmissionResult({ type: 'error', title: 'Pengajuan gagal dikirim', message: `Dokumen wajib belum lengkap: ${missingDocuments.join(', ')}.` })
-      return
-    }
-
-    setSubmissionResult({ type: 'success', title: 'Pengajuan berhasil dikirim', message: 'Pengajuan Anda telah diterima dan akan diperiksa oleh Staf Akademik.', reference: buatNomorSementara() })
+    setSelectedId(item.id)
+    setError('')
   }
 
-  const canContinue = submissionStep === 1 ? Boolean(selectedService) : Boolean(submissionData.purpose.trim() && submissionData.phone.trim())
-  const goToNextStep = () => {
-    if (canContinue) setSubmissionStep((step) => Math.min(step + 1, 3))
+  // Langkah 2 tidak menonaktifkan tombol Lanjut, agar mahasiswa mendapat pesan apa yang masih kurang.
+  const canContinue = step === 1 ? Boolean(selectedAllowed) : true
+  const goNext = () => {
+    if (step === 2 && !keperluan.trim()) return setError('Isi keperluan surat terlebih dahulu.')
+    if (step === 2 && missingRequired.length > 0) return setError(`Dokumen wajib belum diunggah: ${missingRequired.map((item) => item.nama_syarat).join(', ')}.`)
+    setError('')
+    setStep((current) => Math.min(current + 1, 3))
+  }
+
+  const submit = async () => {
+    if (!confirmation) return setError('Centang pernyataan bahwa data dan dokumen yang diunggah sudah benar.')
+    const formData = new FormData()
+    formData.append('jenis_layanan_id', String(selected.id))
+    formData.append('keperluan', keperluan.trim())
+    if (noHp.trim()) formData.append('no_hp', noHp.trim())
+    Object.entries(files).forEach(([syaratId, file]) => formData.append(`berkas_${syaratId}`, file))
+
+    setSending(true)
+    setError('')
+    try {
+      const hasil = await bacaHasil(await kirimPengajuanRequest(formData))
+      setResult(hasil)
+      onSubmitted(hasil, noHp.trim())
+    } catch (galat) {
+      setError(galat.message || 'Pengajuan gagal dikirim. Coba lagi beberapa saat lagi.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  if (result) {
+    return (
+      <div className="submission-content">
+        <div className="breadcrumb">Layanan Kemahasiswaan FTI / Mahasiswa</div>
+        <section className="result-card success" role="status">
+          <CheckCircle2 size={48} />
+          <h2>Pengajuan berhasil dikirim</h2>
+          <p>Pengajuan {result.layanan.nama_layanan} sudah diterima dan akan diperiksa oleh Staf Akademik. Status dan notifikasi dapat dipantau di Riwayat Pengajuan.</p>
+          <small>Nomor pengajuan: {result.no_referensi}</small>
+          <div className="flow-actions"><button type="button" className="outline-button" onClick={onCancel}>Kembali ke Beranda</button><button type="button" className="primary-button" onClick={onOpenHistory}>Lihat Riwayat Pengajuan <ChevronRight size={15} /></button></div>
+        </section>
+      </div>
+    )
   }
 
   return (
     <div className="submission-content">
-        <div className="breadcrumb">Layanan Kemahasiswaan FTI / Mahasiswa</div>
-        <div className="submission-heading">
-          <div><h1>{submissionResult ? 'Status Pengajuan' : submissionStep === 1 ? 'Ajukan Layanan' : submissionStep === 2 ? 'Isi Formulir & Unggah Dokumen' : 'Tinjau & Kirim'}</h1><p>{submissionResult ? 'Berikut hasil pengiriman pengajuan Anda.' : 'Lengkapi data dan dokumen untuk mengajukan layanan.'}</p></div>
-          {!submissionResult && <button type="button" className="submission-back-button" onClick={onCancel}><ChevronLeft size={16} /> Kembali ke Beranda</button>}
-        </div>
-        {!submissionResult && <div className="stepper">{['Pilih Layanan', 'Isi Formulir & Unggah Dokumen', 'Tinjau & Kirim'].map((label, index) => <div className={`step${submissionStep > index + 1 ? ' done' : ''}${submissionStep === index + 1 ? ' current' : ''}`} key={label}><span>{submissionStep > index + 1 ? <CheckCircle2 size={13} /> : index + 1}</span>{label}</div>)}</div>}
+      <div className="breadcrumb">Layanan Kemahasiswaan FTI / Mahasiswa</div>
+      <div className="submission-heading">
+        <div><h1>{step === 1 ? 'Ajukan Layanan' : LANGKAH[step - 1]}</h1><p>Lengkapi data dan dokumen untuk mengajukan layanan.</p></div>
+        <button type="button" className="submission-back-button" onClick={onCancel}><ChevronLeft size={16} /> Kembali ke Beranda</button>
+      </div>
+      <div className="stepper">{LANGKAH.map((label, index) => <div className={`step${step > index + 1 ? ' done' : ''}${step === index + 1 ? ' current' : ''}`} key={label}><span>{step > index + 1 ? <CheckCircle2 size={13} /> : index + 1}</span>{label}</div>)}</div>
 
-        {submissionResult ? (
-          <section className={`result-card ${submissionResult.type}`}>
-            {submissionResult.type === 'success' ? <CheckCircle2 size={48} /> : <AlertCircle size={48} />}
-            <h2>{submissionResult.title}</h2><p>{submissionResult.message}</p>
-            {submissionResult.type === 'success' && <small>Nomor pengajuan: {submissionResult.reference}</small>}
-            <button type="button" className="primary-button" onClick={onCancel}>Kembali ke Beranda</button>
-          </section>
-        ) : (
-          <>
-            {submissionStep === 1 && <section className="flow-card"><div className="flow-card-heading"><h2>Pilih layanan yang ingin diajukan</h2><p>Pilih salah satu layanan untuk melanjutkan pengajuan.</p></div><div className="service-choice-list">{services.map((service) => <button type="button" className={`service-choice${selectedService === service.title ? ' selected' : ''}`} key={service.title} onClick={() => setSelectedService(service.title)}><span className="service-icon"><FileText size={17} /></span><span><strong>{service.title}</strong><small>{service.description}</small></span><span className="choice-radio" /></button>)}</div></section>}
-            {submissionStep === 2 && <section className="form-flow-grid"><div className="flow-card"><h2>Data pengajuan</h2><label htmlFor="purpose">Keperluan Surat *</label><textarea id="purpose" value={submissionData.purpose} onChange={(event) => updateSubmission('purpose', event.target.value)} placeholder="Contoh: Administrasi beasiswa" /><label htmlFor="phone">Nomor Telepon/WhatsApp *</label><input id="phone" value={submissionData.phone} onChange={(event) => updateSubmission('phone', event.target.value)} placeholder="08xxxxxxxxxx" /></div><div className="flow-card"><h2>Dokumen wajib</h2><p className="muted-copy">Format PDF/JPG/PNG, maksimal 5 MB.</p>{selectedServiceData.documents.map((document) => <div className={`document-upload${submissionData.files[document] ? ' uploaded' : ''}`} key={document}><div><strong>{document} *</strong>{submissionData.files[document] ? <small>{submissionData.files[document]}</small> : <small>Belum diunggah</small>}</div><label className="upload-button"><Upload size={14} /> {submissionData.files[document] ? 'Ganti berkas' : 'Pilih berkas'}<input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => uploadDocument(document, event.target.files[0])} /></label></div>)}</div></section>}
-            {submissionStep === 3 && <section className="flow-card review-card"><h2>Periksa kembali pengajuan Anda</h2><div className="review-row"><span>Layanan</span><strong>{selectedService}</strong></div><div className="review-row"><span>Nama</span><strong>{user.nama || 'Mahasiswa'}</strong></div><div className="review-row"><span>NIM</span><strong>{user.nim || user.identifier || '-'}</strong></div><div className="review-row"><span>Keperluan</span><strong>{submissionData.purpose}</strong></div><h3>Dokumen terunggah</h3>{selectedServiceData.documents.map((document) => <div className="review-document" key={document}><CheckCircle2 size={15} />{document}<span>{submissionData.files[document] || 'Belum diunggah'}</span></div>)}<label className="confirmation"><input type="checkbox" checked={submissionData.confirmation} onChange={(event) => updateSubmission('confirmation', event.target.checked)} /> Saya menyatakan data dan dokumen yang diunggah sudah benar.</label>{submissionResult && <div className="flow-error"><AlertCircle size={15} />{submissionResult.message}</div>}</section>}
-            {submissionResult && <div className="flow-error"><AlertCircle size={15} />{submissionResult.message}</div>}
-            <div className="flow-actions"><button type="button" className="outline-button" onClick={submissionStep === 1 ? onCancel : () => setSubmissionStep((step) => step - 1)}>{submissionStep === 1 ? 'Kembali ke Beranda' : 'Kembali'}</button>{submissionStep < 3 ? <button type="button" className="primary-button" disabled={!canContinue} onClick={goToNextStep}>Lanjut <ChevronRight size={15} /></button> : <button type="button" className="primary-button" onClick={submitApplication}>Kirim Pengajuan <ChevronRight size={15} /></button>}</div>
-          </>
-        )}
+      {step === 1 && (
+        <section className="flow-card">
+          <div className="flow-card-heading"><h2>Pilih layanan yang ingin diajukan</h2><p>Pilih salah satu layanan untuk melanjutkan pengajuan.</p></div>
+          <StatusMuat state={layanan} kosong="Belum ada layanan yang dibuka." />
+          <div className="service-choice-list">
+            {layanan.data.map((item) => {
+              const blocked = item.kelayakan?.boleh === false
+              return (
+                <button type="button" className={`service-choice${selectedId === item.id ? ' selected' : ''}${blocked ? ' blocked' : ''}`} key={item.id} disabled={blocked} aria-pressed={selectedId === item.id} onClick={() => chooseService(item)}>
+                  <span className="service-icon"><FileText size={17} /></span>
+                  <span><strong>{item.nama_layanan}</strong><small>{item.deskripsi}</small><small>{item.syarat.length ? `Dokumen: ${item.syarat.map((s) => s.nama_syarat + (s.is_required ? '' : ' (opsional)')).join('; ')}` : 'Tidak perlu mengunggah dokumen pendukung.'}</small>{blocked && <small className="service-choice-reason">{item.kelayakan.alasan}</small>}</span>
+                  <span className="choice-radio" />
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {step === 2 && selected && (
+        <section className="form-flow-grid">
+          <div className="flow-card">
+            <h2>Data pengajuan</h2>
+            <p className="muted-copy">{selected.nama_layanan}</p>
+            <label htmlFor="purpose">Keperluan Surat *</label>
+            <textarea id="purpose" maxLength={500} value={keperluan} onChange={(event) => setKeperluan(event.target.value)} placeholder="Contoh: Persyaratan pendaftaran beasiswa" />
+            <label htmlFor="phone">Nomor Telepon/WhatsApp</label>
+            <input id="phone" type="tel" inputMode="tel" value={noHp} onChange={(event) => setNoHp(event.target.value)} placeholder="08xxxxxxxxxx" />
+          </div>
+          <div className="flow-card">
+            <h2>Dokumen pendukung</h2>
+            <p className="muted-copy">Format PDF/JPG/PNG, maksimal 5 MB per berkas. Tarik berkas ke kotak, atau tekan Pilih berkas.</p>
+            {syarat.length === 0 && <p className="muted-copy">Layanan ini tidak memerlukan dokumen pendukung. Surat dibuat oleh sistem dari data Anda.</p>}
+            {syarat.map((item) => (
+              <div
+                className={`document-upload${files[item.id] ? ' uploaded' : ''}${dragOver === item.id ? ' dragging' : ''}${fileErrors[item.id] ? ' invalid' : ''}`}
+                key={item.id}
+                onDragOver={(event) => { event.preventDefault(); setDragOver(item.id) }}
+                onDragLeave={() => setDragOver(null)}
+                onDrop={(event) => { event.preventDefault(); setDragOver(null); chooseFile(item, event.dataTransfer.files[0]) }}
+              >
+                <div>
+                  <strong>{item.nama_syarat} {item.is_required ? '*' : '(opsional)'}</strong>
+                  {fileErrors[item.id]
+                    ? <small className="document-upload-error">{fileErrors[item.id]}</small>
+                    : <small>{files[item.id] ? `${files[item.id].name} · ${ukuranTampil(files[item.id].size)}` : 'Belum diunggah'}</small>}
+                </div>
+                <label className="upload-button"><Upload size={14} /> {files[item.id] ? 'Ganti berkas' : 'Pilih berkas'}<input type="file" accept={ACCEPT_BERKAS} onChange={(event) => { chooseFile(item, event.target.files[0]); event.target.value = '' }} /></label>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {step === 3 && selected && (
+        <section className="flow-card review-card">
+          <h2>Periksa kembali pengajuan Anda</h2>
+          <div className="review-row"><span>Layanan</span><strong>{selected.nama_layanan}</strong></div>
+          <div className="review-row"><span>Nama</span><strong>{user.nama || 'Mahasiswa'}</strong></div>
+          <div className="review-row"><span>NIM</span><strong>{user.identifier || '-'}</strong></div>
+          <div className="review-row"><span>Program Studi</span><strong>{user.prodi || '-'}</strong></div>
+          <div className="review-row"><span>Keperluan</span><strong>{keperluan.trim()}</strong></div>
+          <div className="review-row"><span>Telepon/WhatsApp</span><strong>{noHp.trim() || '-'}</strong></div>
+          <h3>Dokumen terunggah</h3>
+          {syarat.length === 0 && <p className="muted-copy">Tidak ada dokumen yang perlu diunggah.</p>}
+          {syarat.map((item) => <div className="review-document" key={item.id}>{files[item.id] ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}{item.nama_syarat}<span>{files[item.id]?.name || (item.is_required ? 'Belum diunggah' : 'Tidak dilampirkan')}</span></div>)}
+          <label className="confirmation"><input type="checkbox" checked={confirmation} onChange={(event) => setConfirmation(event.target.checked)} /> Saya menyatakan data dan dokumen yang diunggah sudah benar.</label>
+        </section>
+      )}
+
+      {error && <div className="flow-error" role="alert"><AlertCircle size={15} />{error}</div>}
+      <div className="flow-actions">
+        <button type="button" className="outline-button" disabled={sending} onClick={step === 1 ? onCancel : () => { setError(''); setStep((current) => current - 1) }}>{step === 1 ? 'Kembali ke Beranda' : 'Kembali'}</button>
+        {step < 3
+          ? <button type="button" className="primary-button" disabled={!canContinue} onClick={goNext}>Lanjut <ChevronRight size={15} /></button>
+          : <button type="button" className="primary-button" disabled={sending} onClick={submit}>{sending ? 'Mengirim...' : 'Kirim Pengajuan'} {!sending && <ChevronRight size={15} />}</button>}
+      </div>
     </div>
   )
 }

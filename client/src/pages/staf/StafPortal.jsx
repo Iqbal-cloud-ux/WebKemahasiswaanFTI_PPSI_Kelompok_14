@@ -4,7 +4,8 @@ import { ShieldAlert } from 'lucide-react'
 import { ErrorBoundary } from '../../components/ErrorBoundary.jsx'
 import { TidakDitemukanPage } from '../galat/TidakDitemukanPage.jsx'
 import { StaffLayout } from '../../layouts/StaffLayout.jsx'
-import { checkStaffAccess } from '../../services/api.js'
+import { useDataServer } from '../../hooks/useDataServer.js'
+import { checkStaffAccess, daftarSemuaPengajuanRequest } from '../../services/api.js'
 import { ArsipSuratPage } from './ArsipSuratPage.jsx'
 import { BerandaStafPage } from './BerandaStafPage.jsx'
 import { DaftarPengajuanPage } from './DaftarPengajuanPage.jsx'
@@ -34,12 +35,14 @@ const pageFromPath = (pathname) => {
 // Portal staf: memeriksa hak akses ke server, lalu menampilkan halaman sesuai alamat.
 // Untuk menambah halaman staf: buat file di folder ini, tambahkan di PAGE_PATHS,
 // NAVIGATION (layouts/StaffLayout.jsx), dan <Route> di bawah.
-export function StafPortal({ user, onLogout }) {
+export function StafPortal({ user, onUpdateUser, onLogout }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [access, setAccess] = useState({ status: 'checking', message: '' })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState(null)
+  // Seluruh pengajuan dari server; dimuat ulang setelah staf mengambil keputusan pemeriksaan.
+  const [pengajuan, muatPengajuan] = useDataServer(daftarSemuaPengajuanRequest)
 
   useEffect(() => {
     let active = true
@@ -103,16 +106,16 @@ export function StafPortal({ user, onLogout }) {
 
           {/* Periksa pengajuan tampil menimpa halaman aktif (dari Beranda atau Daftar Pengajuan). */}
           {selectedSubmission ? (
-            <PeriksaPengajuanPage submission={selectedSubmission} onClose={closeReview} />
+            <PeriksaPengajuanPage pengajuanId={selectedSubmission.id} onClose={closeReview} onSelesai={muatPengajuan} />
           ) : (
             <Routes>
-              <Route index element={<BerandaStafPage onReview={setSelectedSubmission} />} />
-              <Route path="pengajuan" element={<DaftarPengajuanPage onReview={setSelectedSubmission} selectedSubmission={selectedSubmission} onCloseReview={closeReview} />} />
+              <Route index element={<BerandaStafPage pengajuan={pengajuan} onReview={setSelectedSubmission} />} />
+              <Route path="pengajuan" element={<DaftarPengajuanPage pengajuan={pengajuan} onReview={setSelectedSubmission} />} />
               <Route path="draf-surat" element={<DrafSuratPage />} />
               <Route path="arsip-surat" element={<ArsipSuratPage />} />
               <Route path="layanan-template" element={<LayananTemplatePage />} />
               <Route path="rekap" element={<RekapPage />} />
-              <Route path="profil" element={<ProfilStafPage user={user} staffName={staffName} initials={initials} />} />
+              <Route path="profil" element={<ProfilStafPage user={user} staffName={staffName} initials={initials} onUpdateUser={onUpdateUser} />} />
               <Route path="*" element={<TidakDitemukanPage dalamPortal beranda={PAGE_PATHS.Beranda} />} />
             </Routes>
           )}
