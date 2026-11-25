@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { AlertCircle, CheckCircle2, ChevronRight, Upload } from 'lucide-react'
 import { ajukanUlangRequest, bacaHasil, detailPengajuanRequest } from '../../services/api.js'
 import { ACCEPT_BERKAS, periksaBerkas, ukuranTampil } from '../../utils/berkas.js'
+import { tandaiSalah } from '../../utils/validasiForm.js'
 
 // Perbaiki dan ajukan ulang (#77): mahasiswa membaca catatan staf, mengganti berkas yang Tidak Sesuai
 // (berkas lain boleh ikut diganti), lalu mengajukan ulang. Status kembali ke Diajukan.
@@ -78,8 +79,11 @@ export function PerbaikanPage({ onSelesai, onOpenHistory }) {
 
   const submit = async () => {
     const belum = wajibDiganti.filter((b) => !files[b.syarat_layanan_id])
-    if (belum.length > 0) return setError(`Unggah berkas pengganti untuk: ${belum.map((b) => b.nama_syarat).join(', ')}.`)
-    if (!keperluan.trim()) return setError('Keperluan surat wajib diisi.')
+    if (!keperluan.trim()) { setError(''); return tandaiSalah(document.getElementById('perbaikan-keperluan')) }
+    if (belum.length > 0) {
+      document.getElementById(`berkas-${belum[0].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return setError(`Unggah berkas pengganti untuk: ${belum.map((b) => b.nama_syarat).join(', ')}.`)
+    }
     const formData = new FormData()
     if (keperluan.trim() !== data.keperluan) formData.append('keperluan', keperluan.trim())
     Object.entries(files).forEach(([syaratId, file]) => formData.append(`berkas_${syaratId}`, file))
@@ -118,6 +122,7 @@ export function PerbaikanPage({ onSelesai, onOpenHistory }) {
           return (
             <div
               key={berkas.id}
+              id={`berkas-${berkas.id}`}
               className={`document-upload${baru ? ' uploaded' : ''}${dragOver === berkas.id ? ' dragging' : ''}${galat || (wajib && !baru) ? ' invalid' : ''}`}
               onDragOver={(event) => { event.preventDefault(); setDragOver(berkas.id) }}
               onDragLeave={() => setDragOver(null)}

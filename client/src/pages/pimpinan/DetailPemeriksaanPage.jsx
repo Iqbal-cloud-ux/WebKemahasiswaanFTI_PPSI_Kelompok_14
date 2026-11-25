@@ -5,6 +5,7 @@ import { PratinjauBerkas } from '../../components/PratinjauBerkas.jsx'
 import { bacaHasil, detailParafRequest, kembalikanParafRequest, pdfDrafRequest, setujuiParafRequest } from '../../services/api.js'
 import { formatTanggal, formatWaktu, statusStaf } from '../../utils/statusPengajuan.js'
 import { teksSemester } from '../../utils/semester.js'
+import { tandaiSalah } from '../../utils/validasiForm.js'
 
 // Urutan alur persetujuan berjenjang (docs/alur-status.md).
 const URUTAN = ['pending_kakor', 'pending_wadek1', 'pending_dekan', 'disetujui']
@@ -81,7 +82,7 @@ export function DetailPemeriksaanPage({ peranLabel, onKembali }) {
 
   const buka = (jenis) => {
     setError('')
-    if (jenis === 'kembalikan' && !catatan.trim()) return setError('Tuliskan catatan revisi untuk Staf Akademik sebelum mengembalikan draf.')
+    if (jenis === 'kembalikan' && !catatan.trim()) return tandaiSalah(document.getElementById('catatan-paraf'))
     setKonfirmasi(jenis)
   }
 
@@ -105,7 +106,7 @@ export function DetailPemeriksaanPage({ peranLabel, onKembali }) {
     <>
       {heading}
       {!giliranSaya && <div className="staff-notice info" role="status"><span>Draf ini tidak sedang menunggu paraf {peranLabel} ({statusStaf(pengajuan.status).label}). Halaman ini hanya untuk dibaca.</span></div>}
-      {error && <div className="staff-notice error" role="alert"><AlertCircle size={16} /><span>{error}</span></div>}
+      {error && <div className="staff-notice error" role="alert"><AlertCircle size={16} /><span>{error}</span><button type="button" className="pimpinan-tutup" onClick={() => setError('')} aria-label="Tutup pesan"><X size={15} /></button></div>}
 
       <div className="staff-review-layout">
         <div className="staff-review-main">

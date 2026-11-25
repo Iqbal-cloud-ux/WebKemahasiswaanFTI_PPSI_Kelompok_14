@@ -3,6 +3,7 @@ import { AlertCircle, Check, Download, Eye, Wrench } from 'lucide-react'
 import { PratinjauBerkas } from '../../components/PratinjauBerkas.jsx'
 import { bacaHasil, detailPengajuanRequest } from '../../services/api.js'
 import { formatWaktu, statusMahasiswa } from '../../utils/statusPengajuan.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 
 const STATUS_BERKAS = {
   belum_diperiksa: { label: 'Belum diperiksa', tone: 'blue' },
@@ -17,6 +18,7 @@ export function DetailPengajuan({ submission, onPerbaiki }) {
   const [detail, setDetail] = useState({ status: 'memuat', data: null, pesan: '' })
   const [pratinjau, setPratinjau] = useState(null)
   const [notice, setNotice] = useState('')
+  usePesanOtomatis(notice, () => setNotice(''))
   const tutupPratinjau = useCallback(() => setPratinjau(null), [])
 
   useEffect(() => {

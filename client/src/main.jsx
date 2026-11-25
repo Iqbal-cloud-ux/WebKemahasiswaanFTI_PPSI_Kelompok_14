@@ -10,6 +10,10 @@ import './pages/mahasiswa/mahasiswa.css'
 import './pages/pimpinan/pimpinan.css'
 import App from './App.jsx'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
+import { pasangValidasiForm } from './utils/validasiForm.js'
+
+// Kolom yang salah atau kosong ditandai merah dan difokuskan, tanpa gelembung bawaan browser.
+pasangValidasiForm()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

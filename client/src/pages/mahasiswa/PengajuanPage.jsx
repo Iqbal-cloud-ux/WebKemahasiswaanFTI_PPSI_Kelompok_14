@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, FileText, Upload 
 import { bacaHasil, kirimPengajuanRequest } from '../../services/api.js'
 import { ACCEPT_BERKAS, periksaBerkas, ukuranTampil } from '../../utils/berkas.js'
 import { StatusMuat } from './BerandaMahasiswaPage.jsx'
+import { tandaiSalah } from '../../utils/validasiForm.js'
 
 const LANGKAH = ['Pilih Layanan', 'Isi Formulir & Unggah Dokumen', 'Tinjau & Kirim']
 
@@ -21,6 +22,7 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
+  const [tandaiKurang, setTandaiKurang] = useState(false) // kotak dokumen wajib yang kosong diberi warna merah
 
   const selected = layanan.data.find((item) => item.id === selectedId)
   const selectedAllowed = selected && selected.kelayakan?.boleh !== false
@@ -39,6 +41,7 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
     if (item.id !== selectedId) {
       setFiles({})
       setFileErrors({})
+      setTandaiKurang(false)
     }
     setSelectedId(item.id)
     setError('')
@@ -47,14 +50,19 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
   // Langkah 2 tidak menonaktifkan tombol Lanjut, agar mahasiswa mendapat pesan apa yang masih kurang.
   const canContinue = step === 1 ? Boolean(selectedAllowed) : true
   const goNext = () => {
-    if (step === 2 && !keperluan.trim()) return setError('Isi keperluan surat terlebih dahulu.')
-    if (step === 2 && missingRequired.length > 0) return setError(`Dokumen wajib belum diunggah: ${missingRequired.map((item) => item.nama_syarat).join(', ')}.`)
+    // Kolom kosong cukup ditandai merah dan difokuskan; dokumen yang kurang tetap disebutkan namanya.
+    if (step === 2 && !keperluan.trim()) { setError(''); return tandaiSalah(document.getElementById('purpose')) }
+    if (step === 2 && missingRequired.length > 0) {
+      setTandaiKurang(true)
+      document.getElementById(`syarat-${missingRequired[0].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return setError(`Dokumen wajib belum diunggah: ${missingRequired.map((item) => item.nama_syarat).join(', ')}.`)
+    }
     setError('')
     setStep((current) => Math.min(current + 1, 3))
   }
 
   const submit = async () => {
-    if (!confirmation) return setError('Centang pernyataan bahwa data dan dokumen yang diunggah sudah benar.')
+    if (!confirmation) { setError(''); return tandaiSalah(document.getElementById('confirmation')) }
     const formData = new FormData()
     formData.append('jenis_layanan_id', String(selected.id))
     formData.append('keperluan', keperluan.trim())
@@ -133,8 +141,9 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
             {syarat.length === 0 && <p className="muted-copy">Layanan ini tidak memerlukan dokumen pendukung. Surat dibuat oleh sistem dari data Anda.</p>}
             {syarat.map((item) => (
               <div
-                className={`document-upload${files[item.id] ? ' uploaded' : ''}${dragOver === item.id ? ' dragging' : ''}${fileErrors[item.id] ? ' invalid' : ''}`}
+                className={`document-upload${files[item.id] ? ' uploaded' : ''}${dragOver === item.id ? ' dragging' : ''}${fileErrors[item.id] || (tandaiKurang && item.is_required && !files[item.id]) ? ' invalid' : ''}`}
                 key={item.id}
+                id={`syarat-${item.id}`}
                 onDragOver={(event) => { event.preventDefault(); setDragOver(item.id) }}
                 onDragLeave={() => setDragOver(null)}
                 onDrop={(event) => { event.preventDefault(); setDragOver(null); chooseFile(item, event.dataTransfer.files[0]) }}
@@ -164,7 +173,7 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
           <h3>Dokumen terunggah</h3>
           {syarat.length === 0 && <p className="muted-copy">Tidak ada dokumen yang perlu diunggah.</p>}
           {syarat.map((item) => <div className="review-document" key={item.id}>{files[item.id] ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}{item.nama_syarat}<span>{files[item.id]?.name || (item.is_required ? 'Belum diunggah' : 'Tidak dilampirkan')}</span></div>)}
-          <label className="confirmation"><input type="checkbox" checked={confirmation} onChange={(event) => setConfirmation(event.target.checked)} /> Saya menyatakan data dan dokumen yang diunggah sudah benar.</label>
+          <label className="confirmation" htmlFor="confirmation"><input id="confirmation" type="checkbox" checked={confirmation} onChange={(event) => setConfirmation(event.target.checked)} /> Saya menyatakan data dan dokumen yang diunggah sudah benar.</label>
         </section>
       )}
 

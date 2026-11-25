@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle2, ClipboardCheck, Clock3, LogOut, Search, X } 
 import { useDataServer } from '../../hooks/useDataServer.js'
 import { antreanParafRequest } from '../../services/api.js'
 import { formatWaktu, hariSejak } from '../../utils/statusPengajuan.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 
 const BATAS_TUNGGU_HARI = 2
 
@@ -12,6 +13,7 @@ export function AntreanParafPage({ peranLabel, onPeriksa, pesan }) {
   const [antrean] = useDataServer(antreanParafRequest)
   const [search, setSearch] = useState('')
   const [notice, setNotice] = useState(pesan || '')
+  usePesanOtomatis(notice, () => setNotice(''))
 
   const rows = antrean.data.filter((d) => `${d.no_referensi} ${d.mahasiswa.nama} ${d.mahasiswa.nim} ${d.nama_layanan}`.toLowerCase().includes(search.trim().toLowerCase()))
   const lewat = antrean.data.filter((d) => hariSejak(d.masuk_tahap_at) > BATAS_TUNGGU_HARI).length

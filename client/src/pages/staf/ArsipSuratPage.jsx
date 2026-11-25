@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Download, ExternalLink, LockKeyhole, Search, X } from 'lucide-react'
 import { initialStaffArchives } from '../../data/contohStaf.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 
 export function ArsipSuratPage() {
   const [archives] = useState(initialStaffArchives)
@@ -10,6 +11,7 @@ export function ArsipSuratPage() {
   const [page, setPage] = useState(1)
   const [selectedArchive, setSelectedArchive] = useState(null)
   const [notice, setNotice] = useState('')
+  usePesanOtomatis(notice, () => setNotice(''))
   const pageSize = 5
 
   const filteredArchives = archives

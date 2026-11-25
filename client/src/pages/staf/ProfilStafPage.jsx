@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, X } from 'lucide-react'
 import { bacaHasil, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
+import { tandaiSalah } from '../../utils/validasiForm.js'
 
 // Profil staf: identitas hanya baca, ubah kontak, dan ganti kata sandi (tersambung ke /api/profil).
 export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
@@ -12,13 +14,11 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [visiblePasswords, setVisiblePasswords] = useState({ current: false, new: false, confirm: false })
   const [feedback, setFeedback] = useState(null)
+  usePesanOtomatis(feedback, () => setFeedback(null), feedback?.type === 'success')
 
   const saveContactProfile = async (event) => {
     event.preventDefault()
-    if (!email.trim() || !phone.trim()) {
-      setFeedback({ type: 'error', message: 'Email dan nomor telepon wajib diisi.' })
-      return
-    }
+    // Kolom kosong atau email tidak valid sudah ditangani atribut required/type (ditandai merah tanpa pesan).
     setSaving(true)
     try {
       const profil = await bacaHasil(await ubahKontakRequest({ email: email.trim(), no_hp: phone.trim() }))
@@ -33,15 +33,14 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
 
   const changePassword = async (event) => {
     event.preventDefault()
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setFeedback({ type: 'error', message: 'Lengkapi semua kolom kata sandi terlebih dahulu.' })
-      return
-    }
+    // Kolom kosong sudah ditangani atribut required (ditandai merah tanpa pesan).
     if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+      tandaiSalah(document.getElementById('staff-password-new'))
       setFeedback({ type: 'error', message: 'Kata sandi baru harus memenuhi seluruh persyaratan keamanan.' })
       return
     }
     if (newPassword !== confirmPassword) {
+      tandaiSalah(document.getElementById('staff-password-confirm'))
       setFeedback({ type: 'error', message: 'Konfirmasi kata sandi baru tidak cocok.' })
       return
     }
@@ -100,11 +99,11 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
             </label>
             <label className="staff-profile-input" htmlFor="staff-profile-email">
               <span>Alamat Surel</span>
-              <input id="staff-profile-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+              <input id="staff-profile-email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
             </label>
             <label className="staff-profile-input" htmlFor="staff-profile-phone">
               <span>Nomor Telepon</span>
-              <input id="staff-profile-phone" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
+              <input id="staff-profile-phone" type="tel" required value={phone} onChange={(event) => setPhone(event.target.value)} />
             </label>
             <label className="staff-profile-readonly" htmlFor="staff-profile-unit">
               <span>Unit Kerja</span>
@@ -123,7 +122,7 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
               <label className="staff-profile-password-field" htmlFor={`staff-password-${field.key}`} key={field.key}>
                 <span>{field.label} <b>*</b></span>
                 <span>
-                  <input id={`staff-password-${field.key}`} type={visiblePasswords[field.key] ? 'text' : 'password'} autoComplete={field.autoComplete} placeholder={field.placeholder} value={field.value} onChange={(event) => field.setValue(event.target.value)} />
+                  <input id={`staff-password-${field.key}`} type={visiblePasswords[field.key] ? 'text' : 'password'} autoComplete={field.autoComplete} required placeholder={field.placeholder} value={field.value} onChange={(event) => field.setValue(event.target.value)} />
                   <button type="button" aria-label={visiblePasswords[field.key] ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'} onClick={() => setVisiblePasswords((current) => ({ ...current, [field.key]: !current[field.key] }))}>
                     {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>

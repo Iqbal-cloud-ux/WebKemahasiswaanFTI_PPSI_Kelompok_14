@@ -204,7 +204,8 @@
 .profile-heading { margin: 10px 0 23px; }
 .profile-heading h1 { margin: 0; color: #172033; font-size: 27px; line-height: 1.25; }
 .profile-heading p { margin: 6px 0 0; color: #64727e; font-size: 12px; }
-.profile-feedback { margin: -7px 0 18px; padding: 11px 13px; border: 1px solid; border-radius: 5px; font-size: 11px; line-height: 1.5; }
+.profile-feedback { display: flex; align-items: flex-start; gap: 9px; margin: -7px 0 18px; padding: 11px 13px; border: 1px solid; border-radius: 5px; font-size: 11px; line-height: 1.5; }
+.profile-feedback-tutup { display: grid; place-items: center; margin-left: auto; padding: 0; border: 0; color: inherit; background: transparent; cursor: pointer; }
 .profile-feedback.info { border-color: #cfe0ff; color: #2860c4; background: #f1f6ff; }
 .profile-feedback.error { border-color: #f4cccc; color: #a52e32; background: #fff0f0; }
 .profile-feedback.success { border-color: #9bd5b2; color: #126d3a; background: #f5fff8; }

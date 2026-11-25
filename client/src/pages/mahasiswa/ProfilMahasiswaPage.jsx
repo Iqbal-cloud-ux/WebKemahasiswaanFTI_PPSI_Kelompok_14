@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Eye, EyeOff, LockKeyhole } from 'lucide-react'
+import { Eye, EyeOff, LockKeyhole, X } from 'lucide-react'
 import { bacaHasil, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
 import { teksSemester } from '../../utils/semester.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
+import { tandaiSalah } from '../../utils/validasiForm.js'
 
 // Profil mahasiswa: data akademik hanya baca, ubah kontak, ganti kata sandi.
 export function ProfilMahasiswaPage({ user, onUpdateUser }) {
@@ -13,6 +15,7 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [visiblePasswords, setVisiblePasswords] = useState({ current: false, new: false, confirm: false })
+  usePesanOtomatis(notice, () => setNotice(null), notice?.type === 'success')
 
   const passwordCriteria = [newPassword.length >= 8, /[A-Z]/.test(newPassword), /[a-z]/.test(newPassword), /[0-9]/.test(newPassword), /[^A-Za-z0-9]/.test(newPassword)]
   const passwordStrength = passwordCriteria.filter(Boolean).length
@@ -33,15 +36,14 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
 
   const changePassword = async (event) => {
     event.preventDefault()
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setNotice({ type: 'error', message: 'Lengkapi semua kolom kata sandi terlebih dahulu.' })
-      return
-    }
-    if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+    // Kolom kosong sudah ditangani atribut required (ditandai merah tanpa pesan).
+    if (passwordStrength < passwordCriteria.length) {
+      tandaiSalah(document.getElementById('password-new'))
       setNotice({ type: 'error', message: 'Kata sandi baru harus memenuhi seluruh persyaratan keamanan.' })
       return
     }
     if (newPassword !== confirmPassword) {
+      tandaiSalah(document.getElementById('password-confirm'))
       setNotice({ type: 'error', message: 'Konfirmasi kata sandi baru tidak cocok.' })
       return
     }
@@ -63,7 +65,7 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
     <>
             <div className="breadcrumb">Layanan Kemahasiswaan FTI / Mahasiswa</div>
             <div className="profile-heading"><h1>Profil</h1><p>Kelola kontak pribadi dan keamanan akun Anda.</p></div>
-            {notice && <div className={`profile-feedback ${notice.type}`} role="status">{notice.message}</div>}
+            {notice && <div className={`profile-feedback ${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'}><span>{notice.message}</span><button type="button" className="profile-feedback-tutup" onClick={() => setNotice(null)} aria-label="Tutup pesan"><X size={15} /></button></div>}
             <div className="profile-layout">
               <section className="profile-section">
                 <h2>Data Diri</h2>
@@ -87,7 +89,7 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
                     { key: 'current', label: 'Kata Sandi Lama', placeholder: 'Masukkan kata sandi lama', value: currentPassword, update: setCurrentPassword, autoComplete: 'current-password' },
                     { key: 'new', label: 'Kata Sandi Baru', placeholder: 'Masukkan kata sandi baru', value: newPassword, update: setNewPassword, autoComplete: 'new-password' },
                     { key: 'confirm', label: 'Konfirmasi Kata Sandi Baru', placeholder: 'Ulangi kata sandi baru', value: confirmPassword, update: setConfirmPassword, autoComplete: 'new-password' },
-                  ].map((field) => <label className="profile-password-card" htmlFor={`password-${field.key}`} key={field.key}><span>{field.label} <b>*</b></span><span className="profile-password-input"><input id={`password-${field.key}`} type={visiblePasswords[field.key] ? 'text' : 'password'} autoComplete={field.autoComplete} placeholder={field.placeholder} value={field.value} onChange={(event) => field.update(event.target.value)} /><button type="button" aria-label={visiblePasswords[field.key] ? `Sembunyikan ${field.label.toLowerCase()}` : `Tampilkan ${field.label.toLowerCase()}`} onClick={() => setVisiblePasswords((current) => ({ ...current, [field.key]: !current[field.key] }))}>{visiblePasswords[field.key] ? <Eye size={16} /> : <EyeOff size={16} />}</button></span></label>)}
+                  ].map((field) => <label className="profile-password-card" htmlFor={`password-${field.key}`} key={field.key}><span>{field.label} <b>*</b></span><span className="profile-password-input"><input id={`password-${field.key}`} type={visiblePasswords[field.key] ? 'text' : 'password'} autoComplete={field.autoComplete} required placeholder={field.placeholder} value={field.value} onChange={(event) => field.update(event.target.value)} /><button type="button" aria-label={visiblePasswords[field.key] ? `Sembunyikan ${field.label.toLowerCase()}` : `Tampilkan ${field.label.toLowerCase()}`} onClick={() => setVisiblePasswords((current) => ({ ...current, [field.key]: !current[field.key] }))}>{visiblePasswords[field.key] ? <Eye size={16} /> : <EyeOff size={16} />}</button></span></label>)}
                   <div className="password-strength" aria-label={`Kekuatan kata sandi: ${passwordStrength} dari 5`}><div>{passwordCriteria.map((passed, index) => <span className={passed ? 'passed' : ''} key={index} />)}</div><p>Kekuatan kata sandi: {passwordStrength === 0 ? 'Belum diisi' : passwordStrength < 3 ? 'Lemah' : passwordStrength < 5 ? 'Cukup' : 'Kuat'}</p></div>
                   <button type="submit" className="outline-button profile-password-submit" disabled={saving}>Ubah Kata Sandi</button>
                 </form>

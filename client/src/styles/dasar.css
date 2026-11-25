@@ -8,6 +8,22 @@ label { display: block; margin-bottom: 5px; font-size: 8px; font-weight: 700; }
 input { width: 100%; height: 30px; border: 1px solid #dfe7ec; border-radius: 4px; padding: 0 9px; color: #172033; font-size: 8px; outline: none; }
 input:focus { border-color: #168043; box-shadow: 0 0 0 2px #1680431a; }
 input[aria-invalid="true"] { border-color: #d95959; }
+/* Kolom yang salah atau belum diisi (utils/validasiForm.js): merah, juga untuk select dan textarea.
+   !important dipakai karena gaya kolom di tiap halaman lebih spesifik dan dimuat belakangan. */
+:is(input, select, textarea)[aria-invalid="true"] { border-color: #d95959 !important; background-color: #fff6f6 !important; }
+:is(input, select, textarea)[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px #d9595926 !important; }
+/* Kotak centang tidak bisa diberi border; pakai garis luar merah dan warnai teks labelnya. */
+input[type="checkbox"][aria-invalid="true"] { outline: 2px solid #d95959; outline-offset: 2px; }
+label:has(> input[type="checkbox"][aria-invalid="true"]) { color: #a52e32 !important; }
 input::placeholder { color: #95a1ab; }
+/* Umpan balik klik: tombol sedikit mengecil dan menggelap saat ditekan, agar pengguna tahu klik diterima.
+   Memakai properti `scale` (bukan `transform`) supaya tidak menimpa rotasi yang sudah ada di beberapa tombol. */
+button, .upload-button { transition: scale .08s ease, filter .12s ease; }
+button:not(:disabled):active, .upload-button:active { scale: .96; filter: brightness(.9); }
+button:focus-visible { outline: 2px solid #16804380; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  button, .upload-button { transition: none; }
+  button:not(:disabled):active, .upload-button:active { scale: none; }
+}
 footer { width: 100%; margin-top: auto; padding: 17px; border-top: 1px solid #edf0f2; color: #71818c; text-align: center; font-size: 7px; line-height: 1.5; background: #fff; }
 footer span { color: #87949d; }

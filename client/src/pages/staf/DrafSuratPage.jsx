@@ -6,6 +6,7 @@ import {
   bacaHasil, daftarDrafRequest, detailDrafRequest, pdfDrafRequest, pratinjauDrafRequest, simpanDrafRequest, teruskanDrafRequest,
 } from '../../services/api.js'
 import { formatTanggal, statusStaf } from '../../utils/statusPengajuan.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 
 const PAGE_SIZE = 10
 // surat_resmi.status_draf -> label dan akhiran kelas CSS (docs/alur-status.md).
@@ -30,6 +31,7 @@ export function DrafSuratPage() {
   const [busy, setBusy] = useState('')
   const [editorError, setEditorError] = useState('')
   const [notice, setNotice] = useState('')
+  usePesanOtomatis(notice, () => setNotice(''))
   const [pratinjau, setPratinjau] = useState(null) // { judul, muat }
 
   const drafts = daftar.data

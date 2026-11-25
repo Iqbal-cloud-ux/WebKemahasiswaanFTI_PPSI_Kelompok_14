@@ -4,6 +4,8 @@ import { PratinjauBerkas } from '../../components/PratinjauBerkas.jsx'
 import { bacaHasil, detailPengajuanRequest, periksaPengajuanRequest } from '../../services/api.js'
 import { formatWaktu, statusStaf } from '../../utils/statusPengajuan.js'
 import { teksSemester } from '../../utils/semester.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
+import { tandaiSalah } from '../../utils/validasiForm.js'
 
 const KEPUTUSAN = {
   verifikasi: { tombol: 'Verifikasi', kelas: 'staff-review-verify' },
@@ -19,6 +21,7 @@ export function PeriksaPengajuanPage({ pengajuanId, onClose, onSelesai }) {
   const [hasilBerkas, setHasilBerkas] = useState({}) // id berkas -> { status_verifikasi, catatan }
   const [note, setNote] = useState('')
   const [feedback, setFeedback] = useState(null)
+  usePesanOtomatis(feedback, () => setFeedback(null), feedback?.type === 'success')
   const [sending, setSending] = useState(false)
   const [pratinjau, setPratinjau] = useState(null)
 
@@ -66,13 +69,18 @@ export function PeriksaPengajuanPage({ pengajuanId, onClose, onSelesai }) {
   const submitDecision = async (keputusan) => {
     const belumDitandai = data.berkas.filter((b) => !hasilBerkas[b.id]?.status_verifikasi)
     if (keputusan === 'verifikasi' && belumDitandai.length > 0) {
+      // Gulir ke dokumen pertama yang belum ditandai Sesuai/Tidak Sesuai.
+      const pilihan = document.querySelector(`input[name="document-${belumDitandai[0].id}"]`)
+      pilihan?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      pilihan?.focus({ preventScroll: true })
       return setFeedback({ type: 'error', message: `Tandai semua dokumen terlebih dahulu. Belum ditandai: ${belumDitandai.map((b) => b.nama_syarat).join(', ')}.` })
     }
     if (keputusan === 'verifikasi' && data.berkas.some((b) => hasilBerkas[b.id]?.status_verifikasi !== 'sesuai')) {
       return setFeedback({ type: 'error', message: 'Semua dokumen harus dinyatakan Sesuai sebelum diverifikasi. Gunakan Minta Perbaikan bila ada dokumen yang tidak sesuai.' })
     }
     if (keputusan !== 'verifikasi' && !note.trim()) {
-      return setFeedback({ type: 'error', message: keputusan === 'tolak' ? 'Tuliskan alasan penolakan pada kolom catatan.' : 'Tuliskan catatan perbaikan untuk mahasiswa pada kolom catatan.' })
+      setFeedback(null)
+      return tandaiSalah(document.getElementById('catatan-pemeriksaan'))
     }
     if (keputusan === 'tolak' && !window.confirm('Tolak pengajuan ini? Penolakan bersifat akhir dan mahasiswa harus membuat pengajuan baru.')) return
 

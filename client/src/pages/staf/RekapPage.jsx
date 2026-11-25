@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CalendarDays, CheckCircle2, Clock3, Download, FileText, X } from 'lucide-react'
 import { reportServiceSeeds, initialReportRecords } from '../../data/contohStaf.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 
 export function RekapPage() {
   const [startDate, setStartDate] = useState('2026-10-01')
@@ -9,6 +10,7 @@ export function RekapPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [exportFormat, setExportFormat] = useState('excel')
   const [notice, setNotice] = useState('')
+  usePesanOtomatis(notice, () => setNotice(''))
   const periods = [
     { label: '1–7 Okt', start: '2026-10-01', end: '2026-10-07' },
     { label: '8–14 Okt', start: '2026-10-08', end: '2026-10-14' },

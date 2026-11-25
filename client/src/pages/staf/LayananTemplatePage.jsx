@@ -5,6 +5,8 @@ import {
   bacaHasil, hapusLayananRequest, kelolaLayananRequest, simpanTemplateRequest, statusLayananRequest, tambahLayananRequest, ubahLayananRequest,
 } from '../../services/api.js'
 import { formatTanggal } from '../../utils/statusPengajuan.js'
+import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
+import { tandaiSalah } from '../../utils/validasiForm.js'
 
 // Contoh nilai untuk pratinjau template (data palsu).
 const CONTOH_NILAI = {
@@ -29,6 +31,7 @@ export function LayananTemplatePage() {
   const [previewTemplate, setPreviewTemplate] = useState(null)
   const [formError, setFormError] = useState('')
   const [notice, setNotice] = useState(null)
+  usePesanOtomatis(notice, () => setNotice(null), notice?.type === 'success')
   const [saving, setSaving] = useState(false)
   const fokusTemplate = useRef({ field: 'body_template', el: null })
 
@@ -71,8 +74,17 @@ export function LayananTemplatePage() {
       deskripsi: serviceEditor.deskripsi.trim(),
       syarat: serviceEditor.syarat.map(({ id, nama_syarat, is_required }) => ({ id, nama_syarat: nama_syarat.trim(), is_required })),
     }
-    if (!data.kode_layanan || !data.nama_layanan) return setFormError('Nama dan kode layanan wajib diisi.')
-    if (data.syarat.some((s) => !s.nama_syarat)) return setFormError('Nama setiap dokumen persyaratan wajib diisi, atau hapus barisnya.')
+    // Kolom wajib yang kosong ditandai merah; kursor diletakkan di kolom kosong pertama.
+    const kosong = [
+      !data.nama_layanan && 'staff-service-name',
+      !data.kode_layanan && 'staff-service-code',
+      ...data.syarat.map((s, index) => !s.nama_syarat && `staff-service-syarat-${index}`),
+    ].filter(Boolean)
+    if (kosong.length > 0) {
+      setFormError('')
+      kosong.forEach((id, index) => tandaiSalah(document.getElementById(id), index === 0))
+      return
+    }
     await jalankan(
       () => (serviceEditor.id ? ubahLayananRequest(serviceEditor.id, data) : tambahLayananRequest(data)),
       `Layanan ${data.nama_layanan} tersimpan.${serviceEditor.id ? '' : ' Template bawaan sudah dibuat; sesuaikan di tab Template Surat.'}`,
@@ -113,7 +125,7 @@ export function LayananTemplatePage() {
 
   const saveTemplate = async (event) => {
     event.preventDefault()
-    if (!templateEditor.body_template.trim()) return setFormError('Isi template wajib diisi.')
+    if (!templateEditor.body_template.trim()) { setFormError(''); return tandaiSalah(document.getElementById('staff-template-body_template')) }
     await jalankan(
       () => simpanTemplateRequest(templateEditor.id, {
         header_surat: templateEditor.header_surat,
@@ -250,7 +262,7 @@ export function LayananTemplatePage() {
                 {serviceEditor.syarat.length === 0 && <p className="staff-config-helper">Tidak ada dokumen yang perlu diunggah mahasiswa.</p>}
                 {serviceEditor.syarat.map((s, index) => (
                   <div className="staff-syarat-row" key={s.id || `baru-${index}`}>
-                    <input aria-label={`Nama dokumen ${index + 1}`} maxLength={150} value={s.nama_syarat} onChange={(event) => ubahSyarat(index, { nama_syarat: event.target.value })} placeholder="Nama dokumen" />
+                    <input id={`staff-service-syarat-${index}`} aria-label={`Nama dokumen ${index + 1}`} maxLength={150} value={s.nama_syarat} onChange={(event) => ubahSyarat(index, { nama_syarat: event.target.value })} placeholder="Nama dokumen" />
                     <label><input type="checkbox" checked={Boolean(s.is_required)} onChange={(event) => ubahSyarat(index, { is_required: event.target.checked })} /> Wajib</label>
                     <button type="button" disabled={s.dipakai > 0} title={s.dipakai > 0 ? 'Sudah dipakai berkas pengajuan; tidak bisa dihapus' : 'Hapus dokumen'} aria-label={`Hapus dokumen ${index + 1}`} onClick={() => setServiceEditor((current) => ({ ...current, syarat: current.syarat.filter((_, i) => i !== index) }))}><X size={14} /></button>
                   </div>
