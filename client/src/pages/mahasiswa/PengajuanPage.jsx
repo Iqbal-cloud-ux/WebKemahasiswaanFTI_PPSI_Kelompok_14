@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, FileText, Upload } from 'lucide-react'
-import { bacaHasil, kirimPengajuanRequest } from '../../services/api.js'
-import { ACCEPT_BERKAS, periksaBerkas, ukuranTampil } from '../../utils/berkas.js'
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, Upload } from 'lucide-react'
+import { bacaHasil, kirimPengajuanRequest, unduhFormulirRequest } from '../../services/api.js'
+import { acceptUntuk, periksaBerkas, teksTipe, ukuranTampil } from '../../utils/berkas.js'
 import { StatusMuat } from './BerandaMahasiswaPage.jsx'
 import { tandaiSalah } from '../../utils/validasiForm.js'
+import { InputIsian } from '../../components/InputIsian.jsx'
+import { tampilIsian } from '../../utils/isian.js'
 
 const LANGKAH = ['Pilih Layanan', 'Isi Formulir & Unggah Dokumen', 'Tinjau & Kirim']
 
@@ -14,12 +16,14 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
   const [selectedId, setSelectedId] = useState(initialLayananId)
   const [step, setStep] = useState(1)
   const [keperluan, setKeperluan] = useState('')
+  const [isian, setIsian] = useState({}) // isian tambahan layanan (misalnya data orang tua): nama -> nilai
   const [noHp, setNoHp] = useState(user.no_hp || '')
   const [files, setFiles] = useState({}) // id syarat -> File
   const [fileErrors, setFileErrors] = useState({}) // id syarat -> pesan
   const [dragOver, setDragOver] = useState(null)
   const [confirmation, setConfirmation] = useState(false)
   const [sending, setSending] = useState(false)
+  const [mengunduh, setMengunduh] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
   const [tandaiKurang, setTandaiKurang] = useState(false) // kotak dokumen wajib yang kosong diberi warna merah
@@ -28,10 +32,14 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
   const selectedAllowed = selected && selected.kelayakan?.boleh !== false
   const syarat = selected?.syarat || []
   const missingRequired = syarat.filter((item) => item.is_required && !files[item.id])
+  // Layanan dengan keperluan tetap (misalnya Aktif Kuliah Orang Tua) tidak menampilkan kolom Keperluan.
+  const keperluanTetap = selected?.keperluan_tetap || null
+  const daftarIsian = selected?.isian || []
+  const isianKosong = daftarIsian.filter((item) => item.wajib !== false && !(isian[item.nama] || '').trim())
 
   const chooseFile = (item, file) => {
     if (!file) return
-    const problem = periksaBerkas(file)
+    const problem = periksaBerkas(file, item.tipe_file)
     setFileErrors((current) => ({ ...current, [item.id]: problem }))
     if (!problem) setFiles((current) => ({ ...current, [item.id]: file }))
   }
@@ -41,6 +49,7 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
     if (item.id !== selectedId) {
       setFiles({})
       setFileErrors({})
+      setIsian({})
       setTandaiKurang(false)
     }
     setSelectedId(item.id)
@@ -51,7 +60,12 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
   const canContinue = step === 1 ? Boolean(selectedAllowed) : true
   const goNext = () => {
     // Kolom kosong cukup ditandai merah dan difokuskan; dokumen yang kurang tetap disebutkan namanya.
-    if (step === 2 && !keperluan.trim()) { setError(''); return tandaiSalah(document.getElementById('purpose')) }
+    if (step === 2 && !keperluanTetap && !keperluan.trim()) { setError(''); return tandaiSalah(document.getElementById('purpose')) }
+    if (step === 2 && isianKosong.length > 0) {
+      setError('')
+      isianKosong.forEach((item, index) => tandaiSalah(document.getElementById(`isian-${item.nama}`), index === 0))
+      return
+    }
     if (step === 2 && missingRequired.length > 0) {
       setTandaiKurang(true)
       document.getElementById(`syarat-${missingRequired[0].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -61,11 +75,40 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
     setStep((current) => Math.min(current + 1, 3))
   }
 
+  // Layanan dengan formulir unduhan (misalnya Tidak Menerima Beasiswa): formulir dibuat server dari data profil
+  // dan isian di atas, lalu dicetak, ditempel meterai, ditandatangani, dipindai, dan diunggah sebagai PDF.
+  const unduhFormulir = async () => {
+    if (isianKosong.length > 0) {
+      setError('')
+      isianKosong.forEach((item, index) => tandaiSalah(document.getElementById(`isian-${item.nama}`), index === 0))
+      return
+    }
+    setMengunduh(true)
+    setError('')
+    try {
+      const response = await unduhFormulirRequest(selected.id, Object.fromEntries(daftarIsian.map((item) => [item.nama, (isian[item.nama] || '').trim()])), noHp.trim())
+      if (!response.ok) await bacaHasil(response)
+      const url = URL.createObjectURL(await response.blob())
+      const tautan = document.createElement('a')
+      tautan.href = url
+      tautan.download = `formulir-pernyataan-${user.identifier || 'mahasiswa'}.pdf`
+      tautan.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (galat) {
+      setError(galat.message || 'Formulir gagal diunduh. Coba lagi beberapa saat lagi.')
+    } finally {
+      setMengunduh(false)
+    }
+  }
+
   const submit = async () => {
     if (!confirmation) { setError(''); return tandaiSalah(document.getElementById('confirmation')) }
     const formData = new FormData()
     formData.append('jenis_layanan_id', String(selected.id))
-    formData.append('keperluan', keperluan.trim())
+    if (!keperluanTetap) formData.append('keperluan', keperluan.trim())
+    if (daftarIsian.length) {
+      formData.append('data_isian', JSON.stringify(Object.fromEntries(daftarIsian.map((item) => [item.nama, (isian[item.nama] || '').trim()]))))
+    }
     if (noHp.trim()) formData.append('no_hp', noHp.trim())
     Object.entries(files).forEach(([syaratId, file]) => formData.append(`berkas_${syaratId}`, file))
 
@@ -130,8 +173,19 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
           <div className="flow-card">
             <h2>Data pengajuan</h2>
             <p className="muted-copy">{selected.nama_layanan}</p>
-            <label htmlFor="purpose">Keperluan Surat *</label>
-            <textarea id="purpose" maxLength={500} value={keperluan} onChange={(event) => setKeperluan(event.target.value)} placeholder="Contoh: Persyaratan pendaftaran beasiswa" />
+            {keperluanTetap
+              ? <p className="muted-copy">Keperluan: {keperluanTetap}</p>
+              : <>
+                <label htmlFor="purpose">Keperluan Surat *</label>
+                <textarea id="purpose" maxLength={500} value={keperluan} onChange={(event) => setKeperluan(event.target.value)} placeholder="Contoh: pengajuan Beasiswa ABC Tahun 2026" />
+              </>}
+            {daftarIsian.length > 0 && <p className="muted-copy">Data berikut dicetak di surat. Isi sesuai dokumen pendukung; Staf Akademik akan memeriksanya.</p>}
+            {daftarIsian.map((item) => (
+              <div key={item.nama}>
+                <label htmlFor={`isian-${item.nama}`}>{item.label}{item.wajib !== false ? ' *' : ''}</label>
+                <InputIsian item={item} id={`isian-${item.nama}`} value={isian[item.nama] || ''} onChange={(nilai) => setIsian((current) => ({ ...current, [item.nama]: nilai }))} />
+              </div>
+            ))}
             <label htmlFor="phone">Nomor Telepon/WhatsApp</label>
             <input id="phone" type="tel" inputMode="tel" value={noHp} onChange={(event) => setNoHp(event.target.value)} placeholder="08xxxxxxxxxx" />
           </div>
@@ -139,6 +193,17 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
             <h2>Dokumen pendukung</h2>
             <p className="muted-copy">Format PDF/JPG/PNG, maksimal 5 MB per berkas. Tarik berkas ke kotak, atau tekan Pilih berkas.</p>
             {syarat.length === 0 && <p className="muted-copy">Layanan ini tidak memerlukan dokumen pendukung. Surat dibuat oleh sistem dari data Anda.</p>}
+            {selected.formulir_syarat && (
+              <div className="formulir-unduh">
+                <strong>Formulir surat pernyataan</strong>
+                <ol>
+                  <li>Lengkapi data di formulir ini, lalu unduh formulir yang sudah terisi.</li>
+                  <li>Cetak, tempel meterai Rp10.000, lalu tanda tangani di atas meterai.</li>
+                  <li>Pindai menjadi satu berkas PDF yang jelas, lalu unggah pada kotak "{selected.formulir_syarat}".</li>
+                </ol>
+                <button type="button" className="outline-button" disabled={mengunduh} onClick={unduhFormulir}><Download size={14} /> {mengunduh ? 'Menyiapkan formulir...' : 'Unduh formulir terisi'}</button>
+              </div>
+            )}
             {syarat.map((item) => (
               <div
                 className={`document-upload${files[item.id] ? ' uploaded' : ''}${dragOver === item.id ? ' dragging' : ''}${fileErrors[item.id] || (tandaiKurang && item.is_required && !files[item.id]) ? ' invalid' : ''}`}
@@ -149,12 +214,12 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
                 onDrop={(event) => { event.preventDefault(); setDragOver(null); chooseFile(item, event.dataTransfer.files[0]) }}
               >
                 <div>
-                  <strong>{item.nama_syarat} {item.is_required ? '*' : '(opsional)'}</strong>
+                  <strong>{item.nama_syarat} {item.is_required ? '*' : '(opsional)'}{teksTipe(item.tipe_file) !== 'PDF/JPG/PNG' && ` (hanya ${teksTipe(item.tipe_file)})`}</strong>
                   {fileErrors[item.id]
                     ? <small className="document-upload-error">{fileErrors[item.id]}</small>
                     : <small>{files[item.id] ? `${files[item.id].name} · ${ukuranTampil(files[item.id].size)}` : 'Belum diunggah'}</small>}
                 </div>
-                <label className="upload-button"><Upload size={14} /> {files[item.id] ? 'Ganti berkas' : 'Pilih berkas'}<input type="file" accept={ACCEPT_BERKAS} onChange={(event) => { chooseFile(item, event.target.files[0]); event.target.value = '' }} /></label>
+                <label className="upload-button"><Upload size={14} /> {files[item.id] ? 'Ganti berkas' : 'Pilih berkas'}<input type="file" accept={acceptUntuk(item.tipe_file)} onChange={(event) => { chooseFile(item, event.target.files[0]); event.target.value = '' }} /></label>
               </div>
             ))}
           </div>
@@ -168,7 +233,8 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
           <div className="review-row"><span>Nama</span><strong>{user.nama || 'Mahasiswa'}</strong></div>
           <div className="review-row"><span>NIM</span><strong>{user.identifier || '-'}</strong></div>
           <div className="review-row"><span>Program Studi</span><strong>{user.prodi || '-'}</strong></div>
-          <div className="review-row"><span>Keperluan</span><strong>{keperluan.trim()}</strong></div>
+          <div className="review-row"><span>Keperluan</span><strong>{keperluanTetap || keperluan.trim()}</strong></div>
+          {daftarIsian.map((item) => <div className="review-row" key={item.nama}><span>{item.label}</span><strong>{tampilIsian(item, isian[item.nama])}</strong></div>)}
           <div className="review-row"><span>Telepon/WhatsApp</span><strong>{noHp.trim() || '-'}</strong></div>
           <h3>Dokumen terunggah</h3>
           {syarat.length === 0 && <p className="muted-copy">Tidak ada dokumen yang perlu diunggah.</p>}

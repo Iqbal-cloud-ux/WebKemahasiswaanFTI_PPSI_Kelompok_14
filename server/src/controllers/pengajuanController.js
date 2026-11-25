@@ -4,13 +4,15 @@ const { buatPengajuan, ajukanUlang } = require('../services/pengajuanService');
 const { periksaPengajuan } = require('../services/pemeriksaanService');
 const { TAHAP_PIMPINAN } = require('../services/statusService');
 const { hapusBerkas } = require('../middlewares/unggahBerkas');
+const { ISIAN_LAYANAN, KEPERLUAN_TETAP } = require('../utils/templateSurat');
 
 const FOLDER_UPLOADS = path.resolve(__dirname, '../../uploads');
 const { sendSuccess, sendError } = require('../utils/responseHandler');
 const { tanganiGalat } = require('../utils/galat');
 
 // POST /api/pengajuan (mahasiswa, multipart/form-data)
-// Field: jenis_layanan_id, keperluan, no_hp (opsional), berkas_<id syarat> (satu berkas per syarat).
+// Field: jenis_layanan_id, keperluan, no_hp (opsional), data_isian (JSON, untuk layanan yang punya isian
+// tambahan), berkas_<id syarat> (satu berkas per syarat).
 const kirimPengajuan = async (req, res) => {
   try {
     const hasil = await buatPengajuan({
@@ -18,6 +20,7 @@ const kirimPengajuan = async (req, res) => {
       jenisLayananId: req.body.jenis_layanan_id,
       keperluan: req.body.keperluan,
       noHp: req.body.no_hp,
+      dataIsian: req.body.data_isian,
       files: req.files || [],
       ipAddress: req.ip,
     });
@@ -59,7 +62,11 @@ const detailPengajuan = async (req, res) => {
       ? riwayat.map((r) => (TAHAP_PIMPINAN.includes(r.status_sebelumnya) && r.status_baru === 'diverifikasi' ? { ...r, catatan: null } : r))
       : riwayat;
 
-    return sendSuccess(res, 'Detail pengajuan', { ...pengajuan, berkas, riwayat: riwayatTampil });
+    // Label isian tambahan dan keperluan tetap layanan ini, untuk ditampilkan di halaman detail dan perbaikan.
+    const kode = pengajuan.layanan.kode_layanan;
+    return sendSuccess(res, 'Detail pengajuan', {
+      ...pengajuan, berkas, riwayat: riwayatTampil, isian: ISIAN_LAYANAN[kode] || [], keperluan_tetap: KEPERLUAN_TETAP[kode] || null,
+    });
   } catch (error) {
     return tanganiGalat(res, error, 'Detail Pengajuan');
   }
@@ -96,7 +103,7 @@ const periksa = async (req, res) => {
 };
 
 // PUT /api/pengajuan/:id/ajukan-ulang (mahasiswa pemilik, multipart/form-data)
-// Field: berkas_<id syarat> untuk berkas pengganti, keperluan (opsional, bila ingin diubah).
+// Field: berkas_<id syarat> untuk berkas pengganti, keperluan dan data_isian (opsional, bila ingin diubah).
 const ajukanUlangPengajuan = async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -108,6 +115,7 @@ const ajukanUlangPengajuan = async (req, res) => {
       pengajuanId: id,
       mahasiswaId: req.user.id,
       keperluan: req.body.keperluan,
+      dataIsian: req.body.data_isian,
       files: req.files || [],
       ipAddress: req.ip,
     });

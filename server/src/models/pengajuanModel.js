@@ -28,11 +28,11 @@ const Pengajuan = {
     return row ? Number(row.no_referensi.slice(awalan.length)) || 0 : 0;
   },
 
-  buat: async (conn, { noReferensi, mahasiswaId, jenisLayananId, keperluan }) => {
+  buat: async (conn, { noReferensi, mahasiswaId, jenisLayananId, keperluan, dataIsian = null }) => {
     const [hasil] = await conn.query(
-      `INSERT INTO pengajuan (no_referensi, mahasiswa_id, jenis_layanan_id, keperluan, status)
-       VALUES (?, ?, ?, ?, 'diajukan')`,
-      [noReferensi, mahasiswaId, jenisLayananId, keperluan]
+      `INSERT INTO pengajuan (no_referensi, mahasiswa_id, jenis_layanan_id, keperluan, data_isian, status)
+       VALUES (?, ?, ?, ?, ?, 'diajukan')`,
+      [noReferensi, mahasiswaId, jenisLayananId, keperluan, dataIsian ? JSON.stringify(dataIsian) : null]
     );
     return hasil.insertId;
   },
@@ -70,7 +70,7 @@ const Pengajuan = {
   cariDetail: async (id, executor = db) => {
     const [[row]] = await executor.query(
       `SELECT ${KOLOM_RINGKAS}, u.nama AS mahasiswa_nama, u.identifier AS mahasiswa_nim, u.prodi AS mahasiswa_prodi,
-         u.jenjang AS mahasiswa_jenjang, u.angkatan AS mahasiswa_angkatan
+         u.jenjang AS mahasiswa_jenjang, u.angkatan AS mahasiswa_angkatan, u.no_hp AS mahasiswa_no_hp, p.data_isian
        FROM pengajuan p
        JOIN jenis_layanan j ON j.id = p.jenis_layanan_id
        JOIN users u ON u.id = p.mahasiswa_id
@@ -78,8 +78,11 @@ const Pengajuan = {
       [id]
     );
     if (!row) return undefined;
+    let dataIsian = {};
+    try { dataIsian = row.data_isian ? JSON.parse(row.data_isian) : {}; } catch { dataIsian = {}; }
     return {
       ...bentukRingkas(row),
+      data_isian: dataIsian,
       mahasiswa: {
         id: row.mahasiswa_id,
         nama: row.mahasiswa_nama,
@@ -87,6 +90,7 @@ const Pengajuan = {
         prodi: row.mahasiswa_prodi,
         jenjang: row.mahasiswa_jenjang,
         angkatan: row.mahasiswa_angkatan,
+        no_hp: row.mahasiswa_no_hp,
       },
     };
   },
@@ -114,7 +118,7 @@ const Pengajuan = {
   // Daftar berkas tanpa file_path: lokasi di disk tidak perlu diketahui client.
   daftarBerkas: async (pengajuanId, executor = db) => {
     const [rows] = await executor.query(
-      `SELECT b.id, b.syarat_layanan_id, s.nama_syarat, b.original_name, b.status_verifikasi, b.catatan_verifikasi, b.created_at
+      `SELECT b.id, b.syarat_layanan_id, s.nama_syarat, s.tipe_file, b.original_name, b.status_verifikasi, b.catatan_verifikasi, b.created_at
        FROM berkas_pengajuan b JOIN syarat_layanan s ON s.id = b.syarat_layanan_id
        WHERE b.pengajuan_id = ? ORDER BY s.id, b.id`,
       [pengajuanId]

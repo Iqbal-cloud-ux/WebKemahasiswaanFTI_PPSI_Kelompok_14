@@ -39,6 +39,14 @@ export const bacaHasil = async (response) => {
   return hasil.data
 }
 
+// Mahasiswa: formulir terisi data (PDF) untuk layanan yang memakai formulir unduhan. Respons berupa berkas PDF;
+// bila gagal, respons JSON dibaca lewat bacaHasil.
+export const unduhFormulirRequest = (layananId, dataIsian, noHp) => fetch(`/api/layanan/${encodeURIComponent(layananId)}/formulir`, {
+  method: 'POST',
+  headers: { ...authHeader(), 'Content-Type': 'application/json' },
+  body: JSON.stringify({ data_isian: dataIsian, no_hp: noHp }),
+})
+
 // Layanan aktif beserta syarat dokumen (untuk mahasiswa juga berisi kelayakan tiap layanan).
 export const daftarLayananRequest = () => fetch('/api/layanan', { headers: authHeader() })
 
@@ -88,6 +96,8 @@ export const statusLayananRequest = (id, aktif) => kirimJson(`/api/layanan/${enc
 export const hapusLayananRequest = (id) => fetch(`/api/layanan/${encodeURIComponent(id)}`, { method: 'DELETE', headers: authHeader() })
 
 export const simpanTemplateRequest = (id, data) => kirimJson(`/api/layanan/${encodeURIComponent(id)}/template`, 'PUT', data)
+// Nomor urut surat terakhir tahun berjalan (satu urutan untuk semua surat). Surat berikutnya = nomor ini + 1.
+export const aturNomorUrutRequest = (nomorTerakhir) => kirimJson('/api/layanan/nomor-surat', 'PUT', { nomor_terakhir: nomorTerakhir })
 
 // Staf: draf surat (#81, #82). Pratinjau dan PDF draf mengembalikan berkas PDF, bukan JSON.
 export const daftarDrafRequest = () => fetch('/api/draf', { headers: authHeader() })

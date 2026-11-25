@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { AlertCircle, CheckCircle2, ChevronRight, Upload } from 'lucide-react'
 import { ajukanUlangRequest, bacaHasil, detailPengajuanRequest } from '../../services/api.js'
-import { ACCEPT_BERKAS, periksaBerkas, ukuranTampil } from '../../utils/berkas.js'
+import { acceptUntuk, periksaBerkas, ukuranTampil } from '../../utils/berkas.js'
 import { tandaiSalah } from '../../utils/validasiForm.js'
+import { InputIsian } from '../../components/InputIsian.jsx'
 
 // Perbaiki dan ajukan ulang (#77): mahasiswa membaca catatan staf, mengganti berkas yang Tidak Sesuai
 // (berkas lain boleh ikut diganti), lalu mengajukan ulang. Status kembali ke Diajukan.
@@ -11,6 +12,7 @@ export function PerbaikanPage({ onSelesai, onOpenHistory }) {
   const { id } = useParams()
   const [detail, setDetail] = useState({ status: 'memuat', data: null, pesan: '' })
   const [keperluan, setKeperluan] = useState('')
+  const [isian, setIsian] = useState({}) // isian tambahan layanan: nama -> nilai
   const [files, setFiles] = useState({}) // id syarat -> File
   const [fileErrors, setFileErrors] = useState({})
   const [dragOver, setDragOver] = useState(null)
@@ -26,6 +28,7 @@ export function PerbaikanPage({ onSelesai, onOpenHistory }) {
         if (!aktif) return
         setDetail({ status: 'siap', data, pesan: '' })
         setKeperluan(data.keperluan)
+        setIsian(data.data_isian || {})
       })
       .catch((galat) => { if (aktif) setDetail({ status: 'galat', data: null, pesan: galat.message }) })
     return () => { aktif = false }
@@ -72,20 +75,32 @@ export function PerbaikanPage({ onSelesai, onOpenHistory }) {
   const wajibDiganti = data.berkas.filter((b) => b.status_verifikasi === 'tidak_sesuai')
   const chooseFile = (berkas, file) => {
     if (!file) return
-    const problem = periksaBerkas(file)
+    const problem = periksaBerkas(file, berkas.tipe_file)
     setFileErrors((current) => ({ ...current, [berkas.syarat_layanan_id]: problem }))
     if (!problem) setFiles((current) => ({ ...current, [berkas.syarat_layanan_id]: file }))
   }
 
+  const daftarIsian = data.isian || []
+  const isianKosong = daftarIsian.filter((item) => item.wajib !== false && !(isian[item.nama] || '').trim())
+  const isianBerubah = daftarIsian.some((item) => (isian[item.nama] || '').trim() !== ((data.data_isian || {})[item.nama] || ''))
+
   const submit = async () => {
     const belum = wajibDiganti.filter((b) => !files[b.syarat_layanan_id])
-    if (!keperluan.trim()) { setError(''); return tandaiSalah(document.getElementById('perbaikan-keperluan')) }
+    if (!data.keperluan_tetap && !keperluan.trim()) { setError(''); return tandaiSalah(document.getElementById('perbaikan-keperluan')) }
+    if (isianKosong.length > 0) {
+      setError('')
+      isianKosong.forEach((item, index) => tandaiSalah(document.getElementById(`perbaikan-isian-${item.nama}`), index === 0))
+      return
+    }
     if (belum.length > 0) {
       document.getElementById(`berkas-${belum[0].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return setError(`Unggah berkas pengganti untuk: ${belum.map((b) => b.nama_syarat).join(', ')}.`)
     }
     const formData = new FormData()
-    if (keperluan.trim() !== data.keperluan) formData.append('keperluan', keperluan.trim())
+    if (!data.keperluan_tetap && keperluan.trim() !== data.keperluan) formData.append('keperluan', keperluan.trim())
+    if (isianBerubah) {
+      formData.append('data_isian', JSON.stringify(Object.fromEntries(daftarIsian.map((item) => [item.nama, (isian[item.nama] || '').trim()]))))
+    }
     Object.entries(files).forEach(([syaratId, file]) => formData.append(`berkas_${syaratId}`, file))
 
     setSending(true)
@@ -108,8 +123,18 @@ export function PerbaikanPage({ onSelesai, onOpenHistory }) {
         <h2>{data.layanan.nama_layanan}</h2>
         <p className="muted-copy">{data.no_referensi}</p>
         {data.catatan_revisi && <div className="history-detail-catatan"><AlertCircle size={15} /><div><strong>Catatan Staf Akademik</strong><p>{data.catatan_revisi}</p></div></div>}
-        <label htmlFor="perbaikan-keperluan">Keperluan Surat *</label>
-        <textarea id="perbaikan-keperluan" maxLength={500} value={keperluan} onChange={(event) => setKeperluan(event.target.value)} />
+        {data.keperluan_tetap
+          ? <p className="muted-copy">Keperluan: {data.keperluan_tetap}</p>
+          : <>
+            <label htmlFor="perbaikan-keperluan">Keperluan Surat *</label>
+            <textarea id="perbaikan-keperluan" maxLength={500} value={keperluan} onChange={(event) => setKeperluan(event.target.value)} />
+          </>}
+        {daftarIsian.map((item) => (
+          <div key={item.nama}>
+            <label htmlFor={`perbaikan-isian-${item.nama}`}>{item.label}{item.wajib !== false ? ' *' : ''}</label>
+            <InputIsian item={item} id={`perbaikan-isian-${item.nama}`} value={isian[item.nama] || ''} onChange={(nilai) => setIsian((current) => ({ ...current, [item.nama]: nilai }))} />
+          </div>
+        ))}
       </section>
 
       <section className="flow-card">
@@ -135,7 +160,7 @@ export function PerbaikanPage({ onSelesai, onOpenHistory }) {
                   ? <small className="document-upload-error">{galat}</small>
                   : <small>{baru ? `Pengganti: ${baru.name} · ${ukuranTampil(baru.size)}` : `Berkas saat ini: ${berkas.original_name}`}</small>}
               </div>
-              <label className="upload-button"><Upload size={14} /> {baru ? 'Ganti lagi' : 'Unggah pengganti'}<input type="file" accept={ACCEPT_BERKAS} onChange={(event) => { chooseFile(berkas, event.target.files[0]); event.target.value = '' }} /></label>
+              <label className="upload-button"><Upload size={14} /> {baru ? 'Ganti lagi' : 'Unggah pengganti'}<input type="file" accept={acceptUntuk(berkas.tipe_file)} onChange={(event) => { chooseFile(berkas, event.target.files[0]); event.target.value = '' }} /></label>
             </div>
           )
         })}

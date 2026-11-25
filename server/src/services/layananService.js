@@ -7,6 +7,7 @@ const { LogAktivitas } = require('../models/logModel');
 const { denganTransaksi } = require('../utils/transaksi');
 const { GalatAplikasi } = require('../utils/galat');
 const { KEPALA_SURAT, KAKI_SURAT, isiBawaan, variabelTidakDikenal } = require('../utils/templateSurat');
+const { validasiFormatNomor } = require('../utils/nomorSurat');
 
 const POLA_KODE = /^[A-Z0-9-]{2,20}$/;
 const TIPE_FILE = 'pdf,jpg,png';
@@ -151,17 +152,46 @@ const simpanTemplate = (id, input, aktor) => {
   if (asing.length > 0) {
     throw new GalatAplikasi(`Variabel tidak dikenal: ${asing.map((v) => `{{${v}}}`).join(', ')}. Gunakan variabel yang tersedia`, 400);
   }
+  const formatNomor = validasiFormatNomor(input.format_nomor);
   return denganTransaksi(async (conn) => {
     const [[layanan]] = await conn.query('SELECT kode_layanan FROM jenis_layanan WHERE id = ?', [id]);
     if (!layanan) throw new GalatAplikasi('Layanan tidak ditemukan', 404);
     await conn.query(
-      `INSERT INTO template_surat (jenis_layanan_id, header_surat, body_template, footer_surat) VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE header_surat = VALUES(header_surat), body_template = VALUES(body_template), footer_surat = VALUES(footer_surat)`,
-      [id, header || null, body, footer || null]
+      `INSERT INTO template_surat (jenis_layanan_id, header_surat, body_template, footer_surat, format_nomor) VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE header_surat = VALUES(header_surat), body_template = VALUES(body_template),
+         footer_surat = VALUES(footer_surat), format_nomor = VALUES(format_nomor)`,
+      [id, header || null, body, footer || null, formatNomor]
     );
     await log(conn, aktor, 'ubah_template', `Mengubah template surat layanan ${layanan.kode_layanan}`);
     return { id };
   });
 };
 
-module.exports = { buatLayanan, ubahLayanan, ubahStatusLayanan, hapusLayanan, simpanTemplate };
+// Nomor urut surat terakhir tahun berjalan (satu urutan untuk semua surat). Surat berikutnya memakai nomor ini + 1.
+const ambilNomorUrut = async (executor) => {
+  const tahun = new Date().getFullYear();
+  const [[row]] = await executor.query('SELECT nomor_terakhir FROM nomor_surat_urut WHERE tahun = ?', [tahun]);
+  return { tahun, nomor_terakhir: row ? row.nomor_terakhir : 0 };
+};
+
+// Staf mengatur nomor urut terakhir tahun berjalan, misalnya agar melanjutkan nomor dari buku agenda manual.
+const aturNomorUrut = (input, aktor) => {
+  const nomor = Number(input.nomor_terakhir);
+  if (input.nomor_terakhir === '' || !Number.isInteger(nomor) || nomor < 0 || nomor > 999999) {
+    throw new GalatAplikasi('Nomor urut terakhir harus bilangan bulat 0 sampai 999999', 400);
+  }
+  return denganTransaksi(async (conn) => {
+    const lama = await ambilNomorUrut(conn);
+    await conn.query(
+      `INSERT INTO nomor_surat_urut (tahun, nomor_terakhir) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE nomor_terakhir = VALUES(nomor_terakhir)`,
+      [lama.tahun, nomor]
+    );
+    await log(conn, aktor, 'ubah_nomor_urut', `Mengubah nomor urut surat terakhir tahun ${lama.tahun} dari ${lama.nomor_terakhir} menjadi ${nomor}`);
+    return { tahun: lama.tahun, nomor_terakhir: nomor };
+  });
+};
+
+module.exports = {
+  buatLayanan, ubahLayanan, ubahStatusLayanan, hapusLayanan, simpanTemplate, ambilNomorUrut, aturNomorUrut,
+};

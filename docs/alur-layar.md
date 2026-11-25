@@ -17,12 +17,12 @@ Klik banner revisi atau pengajuan "Perlu Perbaikan": ke halaman pengajuan terseb
 Klik kartu layanan di katalog: mulai pengajuan untuk layanan itu [USULAN].
 Pengajuan Layanan (stepper 3 tahap) [A3]:
 Pilih Layanan: daftar jenis surat beserta syarat dokumen. Pilih satu layanan, lalu lanjut.
-Isi Formulir dan Unggah Dokumen: data profil terisi otomatis; area tarik-dan-lepas untuk berkas persyaratan dengan validasi format dan ukuran (PDF/JPG/PNG, maks 5 MB). Pengajuan tidak bisa dilanjutkan sebelum semua dokumen wajib terunggah; sistem menampilkan daftar yang kurang.
+Isi Formulir dan Unggah Dokumen: data profil terisi otomatis; layanan tertentu meminta isian tambahan yang dicetak di surat (misalnya data orang tua untuk Aktif Kuliah Orang Tua), dan layanan dengan keperluan tetap tidak menampilkan kolom Keperluan; layanan berformulir (Tidak Menerima Beasiswa) menampilkan tombol Unduh formulir terisi beserta petunjuk cetak, tempel meterai, tanda tangan, pindai, dan unggah PDF; area tarik-dan-lepas untuk berkas persyaratan dengan validasi format dan ukuran (PDF/JPG/PNG, maks 5 MB). Pengajuan tidak bisa dilanjutkan sebelum semua dokumen wajib terunggah; sistem menampilkan daftar yang kurang.
 Tinjau dan Kirim: ringkasan seluruh data dan berkas. Tombol Kirim menyimpan pengajuan, memberi nomor referensi, dan mengubah status menjadi Diajukan.
 Setelah Kirim: halaman Pengajuan Berhasil Terkirim dengan ringkasan data yang dikirim [A3]. Dari sana mahasiswa menuju halaman pantau status [USULAN].
 Surat Pengajuan / Pantau Status [A3]: linimasa progres secara real-time. Bila status Selesai, tampil tombol Unduh Surat (PDF ber-QR). Bila Perlu Perbaikan, tampil catatan staf dan jalan ke perbaikan berkas.
 Tombol Unduh hanya aktif untuk status Selesai; bila berkas hilang tampil "Gagal mengunduh file surat" [A3].
-Perbaiki dan Ajukan Ulang [A3]: mahasiswa melihat catatan, mengunggah berkas pengganti, lalu mengajukan ulang; status kembali ke Diajukan.
+Perbaiki dan Ajukan Ulang [A3]: mahasiswa melihat catatan, memperbaiki isian tambahan bila ada, mengunggah berkas pengganti, lalu mengajukan ulang; status kembali ke Diajukan.
 Riwayat Pengajuan [A3]: semua pengajuan dengan filter dan pencarian; klik satu baris untuk melihat detail dan tombol unduh surat bila Selesai.
 Notifikasi [A3]: daftar semua pemberitahuan; klik satu item membuka Detail Notifikasi.
 Profil [A3]: data akademik (hanya baca), ubah kontak (email, nomor telepon), ganti kata sandi.
@@ -32,11 +32,11 @@ Menu: Beranda, Daftar Pengajuan, Draft Surat, Arsip Surat, Jenis Layanan, Rekapi
 
 Beranda Staf [A3]: statistik layanan, antrean yang perlu ditindaklanjuti, aktivitas terbaru, grafik rekap per jenis layanan.
 Daftar Pengajuan [A3]: tabel seluruh pengajuan dengan pencarian dan filter status. Klik satu baris: Periksa dan Verifikasi Pengajuan [USULAN].
-Periksa dan Verifikasi Pengajuan [A3]: data pemohon, pratinjau dokumen persyaratan, dan tiga aksi: Verifikasi (setuju), Minta Perbaikan (wajib catatan), Tolak (dokumen terindikasi tidak sah, wajib alasan). Hasil: status berubah dan mahasiswa mendapat notifikasi.
+Periksa dan Verifikasi Pengajuan [A3]: data pemohon (termasuk isian tambahan dari mahasiswa), pratinjau dokumen persyaratan, dan tiga aksi: Verifikasi (setuju), Minta Perbaikan (wajib catatan), Tolak (dokumen terindikasi tidak sah, wajib alasan). Hasil: status berubah dan mahasiswa mendapat notifikasi.
 Draft Surat [A3]: daftar pengajuan terverifikasi dengan filter status draf (Belum Dibuat, Draf Dibuat, Dikembalikan untuk Revisi). Tombol Buat atau Sunting membuka Buat Draf.
-Buat Draf [A3]: pilih template sesuai layanan, lengkapi data variabel (nama, NIM, program studi, keperluan, dan seterusnya), pratinjau PDF, Simpan, lalu Teruskan ke pemeriksaan pejabat.
+Buat Draf [A3]: pilih template sesuai layanan, lengkapi data variabel (nama, NIM, program studi, keperluan, dan seterusnya; bagian bertanda [ISI OLEH STAF: ...], misalnya periode wisuda, wajib diganti sebelum Teruskan; untuk layanan berformulir seperti Tidak Menerima Beasiswa, isi draf hanya catatan dan PDF draf adalah pindaian unggahan mahasiswa), pratinjau PDF, Simpan, lalu Teruskan ke pemeriksaan pejabat.
 Arsip Surat [A3]: surat yang sudah terbit (setelah persetujuan Dekan), dengan pencarian dan filter tanggal terbit. Klik baris: Rincian Arsip Surat (pratinjau, nomor, tombol unduh, kode verifikasi QR, ringkasan SHA-256).
-Jenis Layanan [A3]: daftar layanan (status aktif, tanggal pembaruan), tombol tambah, edit, hapus. Edit template membuka Edit Template Surat (sisipkan variabel dinamis, pratinjau, simpan).
+Jenis Layanan [A3]: daftar layanan (status aktif, tanggal pembaruan), tombol tambah, edit, hapus. Edit template membuka Edit Template Surat (format nomor surat dengan penanda {urut}/{tahun}/{bulan} beserta contoh hasilnya, sisipkan variabel dinamis, pratinjau, simpan). Tab Template Surat juga menampilkan nomor urut surat terakhir tahun berjalan dan form untuk mengubahnya.
 Rekapitulasi [A3]: volume pengajuan, statistik penyelesaian, grafik tren, distribusi status, ekspor laporan (PDF atau Excel).
 Profil [A3]: lihat dan ubah data profil.
 Kepala Kantor dan Wakil Dekan

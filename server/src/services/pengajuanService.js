@@ -1,3 +1,4 @@
+const path = require('path');
 const Layanan = require('../models/layananModel');
 const Pengajuan = require('../models/pengajuanModel');
 const User = require('../models/userModel');
@@ -6,6 +7,7 @@ const { catatPengajuanBaru, ubahStatus } = require('./statusService');
 const { pathRelatif } = require('../middlewares/unggahBerkas');
 const { denganTransaksi } = require('../utils/transaksi');
 const { GalatAplikasi } = require('../utils/galat');
+const { KEPERLUAN_TETAP, validasiDataIsian } = require('../utils/templateSurat');
 
 const KEPERLUAN_MAKS = 500;
 const POLA_NO_HP = /^\+?[0-9][0-9 -]{7,18}$/;
@@ -25,8 +27,8 @@ const validasiIsian = ({ jenisLayananId, keperluan, noHp }) => {
   if (!Number.isInteger(idLayanan) || idLayanan <= 0) {
     throw new GalatAplikasi('Pilih layanan yang ingin diajukan', 400);
   }
+  // Wajib tidaknya keperluan baru diketahui setelah layanan dibaca (lihat keperluanUntuk).
   const teksKeperluan = typeof keperluan === 'string' ? keperluan.trim() : '';
-  if (!teksKeperluan) throw new GalatAplikasi('Keperluan surat wajib diisi', 400);
   if (teksKeperluan.length > KEPERLUAN_MAKS) {
     throw new GalatAplikasi(`Keperluan surat maksimal ${KEPERLUAN_MAKS} karakter`, 400);
   }
@@ -52,6 +54,15 @@ const cocokkanBerkas = (layanan, files) => {
     if (berkasPerSyarat.has(syarat.id)) {
       throw new GalatAplikasi(`Unggah satu berkas saja untuk dokumen "${syarat.nama_syarat}"`, 400);
     }
+    // Jenis berkas per syarat (syarat_layanan.tipe_file), misalnya pas foto hanya JPG/PNG.
+    const diizinkan = String(syarat.tipe_file || 'pdf,jpg,png').toLowerCase().split(',').map((t) => t.trim());
+    const ekstensi = path.extname(file.filename || file.originalname || '').slice(1).toLowerCase();
+    if (!diizinkan.includes(ekstensi === 'jpeg' ? 'jpg' : ekstensi)) {
+      throw new GalatAplikasi(
+        `Dokumen "${syarat.nama_syarat}" hanya menerima berkas ${diizinkan.map((t) => t.toUpperCase()).join('/')}. Berkas "${file.originalname}" tidak sesuai`,
+        400
+      );
+    }
     berkasPerSyarat.set(syarat.id, file);
   }
 
@@ -69,11 +80,20 @@ const cocokkanBerkas = (layanan, files) => {
   }));
 };
 
+// Layanan dengan keperluan tetap (misalnya Aktif Kuliah Orang Tua) memakai teks tetap; lainnya wajib diisi.
+const keperluanUntuk = (kodeLayanan, teksKeperluan) => {
+  if (KEPERLUAN_TETAP[kodeLayanan]) return KEPERLUAN_TETAP[kodeLayanan];
+  if (!teksKeperluan) throw new GalatAplikasi('Keperluan surat wajib diisi', 400);
+  return teksKeperluan;
+};
+
 const simpanPengajuan = (data) => denganTransaksi(async (conn) => {
-  const { mahasiswaId, idLayanan, teksKeperluan, teksNoHp, files, ipAddress } = data;
+  const { mahasiswaId, idLayanan, teksKeperluan, teksNoHp, dataIsian, files, ipAddress } = data;
 
   const layanan = await Layanan.cariAktif(idLayanan, conn);
   if (!layanan) throw new GalatAplikasi('Layanan tidak ditemukan atau sedang tidak dibuka', 404);
+  const keperluan = keperluanUntuk(layanan.kode_layanan, teksKeperluan);
+  const isianTambahan = validasiDataIsian(layanan.kode_layanan, dataIsian);
 
   const mahasiswa = await User.findById(mahasiswaId);
   const kelayakan = await periksaKelayakan({ layanan, mahasiswa }, conn);
@@ -82,7 +102,7 @@ const simpanPengajuan = (data) => denganTransaksi(async (conn) => {
   const berkas = cocokkanBerkas(layanan, files);
   const noReferensi = await buatNomorReferensi(conn);
   const pengajuanId = await Pengajuan.buat(conn, {
-    noReferensi, mahasiswaId, jenisLayananId: layanan.id, keperluan: teksKeperluan,
+    noReferensi, mahasiswaId, jenisLayananId: layanan.id, keperluan, dataIsian: isianTambahan,
   });
   await Pengajuan.tambahBerkas(conn, pengajuanId, berkas);
   await catatPengajuanBaru(conn, {
@@ -101,8 +121,8 @@ const simpanPengajuan = (data) => denganTransaksi(async (conn) => {
 
 // Menyimpan pengajuan baru beserta berkasnya dalam satu transaksi.
 // files = req.files yang sudah lolos middleware unggahBerkas.
-const buatPengajuan = async ({ mahasiswaId, jenisLayananId, keperluan, noHp, files = [], ipAddress }) => {
-  const isian = validasiIsian({ jenisLayananId, keperluan, noHp });
+const buatPengajuan = async ({ mahasiswaId, jenisLayananId, keperluan, noHp, dataIsian, files = [], ipAddress }) => {
+  const isian = { ...validasiIsian({ jenisLayananId, keperluan, noHp }), dataIsian };
   try {
     return await simpanPengajuan({ mahasiswaId, ...isian, files, ipAddress });
   } catch (error) {
@@ -117,13 +137,16 @@ const buatPengajuan = async ({ mahasiswaId, jenisLayananId, keperluan, noHp, fil
 // Perbaiki dan ajukan ulang (#76): mahasiswa pemilik pengajuan berstatus perlu_perbaikan mengganti
 // berkas yang dinyatakan Tidak Sesuai (dan boleh mengganti berkas lain), lalu status kembali ke diajukan.
 // Mengembalikan { hasil, berkasLama } agar controller bisa menghapus file lama setelah transaksi berhasil.
-const ajukanUlang = ({ pengajuanId, mahasiswaId, keperluan, files = [], ipAddress }) => denganTransaksi(async (conn) => {
+const ajukanUlang = ({ pengajuanId, mahasiswaId, keperluan, dataIsian, files = [], ipAddress }) => denganTransaksi(async (conn) => {
   // ubahStatus mengunci baris, memastikan pemilik, dan memastikan status saat ini perlu_perbaikan.
   const hasil = await ubahStatus(conn, {
     pengajuanId, statusBaru: 'diajukan', aktor: { id: mahasiswaId, role: 'mahasiswa' }, ipAddress,
   });
 
-  const [[{ jenis_layanan_id: layananId }]] = await conn.query('SELECT jenis_layanan_id FROM pengajuan WHERE id = ?', [pengajuanId]);
+  const [[{ jenis_layanan_id: layananId, kode_layanan: kodeLayanan }]] = await conn.query(
+    'SELECT p.jenis_layanan_id, j.kode_layanan FROM pengajuan p JOIN jenis_layanan j ON j.id = p.jenis_layanan_id WHERE p.id = ?',
+    [pengajuanId]
+  );
   const [syarat] = await conn.query(
     'SELECT id, nama_syarat, tipe_file, is_required FROM syarat_layanan WHERE jenis_layanan_id = ? ORDER BY id',
     [layananId]
@@ -164,7 +187,13 @@ const ajukanUlang = ({ pengajuanId, mahasiswaId, keperluan, files = [], ipAddres
     }
   }
 
-  const teksKeperluan = typeof keperluan === 'string' ? keperluan.trim() : '';
+  // Isian tambahan boleh diperbarui (misalnya staf meminta perbaikan data orang tua); dikirim utuh.
+  if (dataIsian !== undefined) {
+    const isianBaru = validasiDataIsian(kodeLayanan, dataIsian);
+    if (isianBaru) await conn.query('UPDATE pengajuan SET data_isian = ? WHERE id = ?', [JSON.stringify(isianBaru), pengajuanId]);
+  }
+
+  const teksKeperluan = typeof keperluan === 'string' && !KEPERLUAN_TETAP[kodeLayanan] ? keperluan.trim() : '';
   if (teksKeperluan) {
     if (teksKeperluan.length > KEPERLUAN_MAKS) throw new GalatAplikasi(`Keperluan surat maksimal ${KEPERLUAN_MAKS} karakter`, 400);
     await conn.query('UPDATE pengajuan SET keperluan = ? WHERE id = ?', [teksKeperluan, pengajuanId]);

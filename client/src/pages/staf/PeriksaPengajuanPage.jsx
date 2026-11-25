@@ -6,6 +6,7 @@ import { formatWaktu, statusStaf } from '../../utils/statusPengajuan.js'
 import { teksSemester } from '../../utils/semester.js'
 import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 import { tandaiSalah } from '../../utils/validasiForm.js'
+import { tampilIsian } from '../../utils/isian.js'
 
 const KEPUTUSAN = {
   verifikasi: { tombol: 'Verifikasi', kelas: 'staff-review-verify' },
@@ -132,6 +133,8 @@ export function PeriksaPengajuanPage({ pengajuanId, onClose, onSelesai }) {
                 <div><dt>Semester</dt><dd>{teksSemester(data.mahasiswa.angkatan)}</dd></div>
                 <div><dt>Layanan</dt><dd>{data.layanan.nama_layanan}</dd></div>
                 <div><dt>Keperluan</dt><dd>{data.keperluan}</dd></div>
+                {/* Isian tambahan dari mahasiswa (misalnya data orang tua): periksa terhadap dokumen pendukung. */}
+                {(data.isian || []).map((item) => <div key={item.nama}><dt>{item.label}</dt><dd>{tampilIsian(item, data.data_isian?.[item.nama])}</dd></div>)}
                 {data.catatan_revisi && <div><dt>Catatan terakhir untuk mahasiswa</dt><dd>{data.catatan_revisi}</dd></div>}
               </dl>
             </div>

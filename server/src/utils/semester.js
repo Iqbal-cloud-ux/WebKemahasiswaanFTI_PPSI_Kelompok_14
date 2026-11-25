@@ -10,4 +10,14 @@ const hitungSemester = (angkatan, tanggal = new Date()) => {
   return semester > 0 ? semester : null;
 };
 
-module.exports = { hitungSemester };
+// Semester dan tahun akademik berjalan untuk surat, dengan aturan yang sama: Agustus sampai Desember =
+// Ganjil tahun itu; Januari sampai Juli = Genap tahun akademik yang dimulai tahun sebelumnya.
+// Contoh: November 2026 = Ganjil 2026/2027; Maret 2027 = Genap 2026/2027.
+const semesterAkademik = (tanggal = new Date()) => {
+  const tahun = tanggal.getFullYear();
+  const ganjil = tanggal.getMonth() + 1 >= BULAN_MULAI_GANJIL;
+  const awal = ganjil ? tahun : tahun - 1;
+  return { semester: ganjil ? 'Ganjil' : 'Genap', tahunAkademik: `${awal}/${awal + 1}` };
+};
+
+module.exports = { hitungSemester, semesterAkademik };

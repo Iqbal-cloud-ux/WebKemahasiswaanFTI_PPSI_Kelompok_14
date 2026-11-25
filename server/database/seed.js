@@ -1,5 +1,5 @@
 // Seed data awal untuk pengembangan dan pengujian: 8 jenis layanan, syaratnya, satu template per
-// layanan, dan akun uji untuk 5 peran. Jalankan dari folder server: npm run seed
+// layanan, penanda tangan uji, dan akun uji untuk 5 peran. Jalankan dari folder server: npm run seed
 //
 // - Semua data akun PALSU (nama, NIM/NIP, email @contoh.test). Jangan ganti dengan data asli mahasiswa.
 // - Kata sandi akun uji diambil dari SEED_PASSWORD di server/.env, tidak pernah ditulis di repo.
@@ -10,6 +10,7 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const db = require('../src/config/db');
 const { KEPALA_SURAT, KAKI_SURAT } = require('../src/utils/templateSurat');
+const { TEMPLATE_RESMI } = require('./templateResmi');
 
 const TIPE_FILE = 'pdf,jpg,png';
 
@@ -24,7 +25,7 @@ const LAYANAN = [
     syarat: [
       ['KRS semester berjalan yang sudah ditandatangani Pembimbing Akademik', 1],
     ],
-    isi: pembuka('SURAT KETERANGAN AKTIF KULIAH') + 'adalah mahasiswa yang terdaftar dan aktif mengikuti perkuliahan pada semester berjalan di Fakultas Teknologi Informasi Universitas Andalas.\n\nSurat keterangan ini dibuat untuk keperluan: {{keperluan}}.',
+    // Template: database/templateResmi.js
   },
   {
     kode: 'AKTIF-ORTU',
@@ -34,7 +35,7 @@ const LAYANAN = [
       ['KRS semester berjalan yang sudah ditandatangani Pembimbing Akademik', 1],
       ['SK terbaru orang tua (wajib bila orang tua berstatus PNS)', 0],
     ],
-    isi: pembuka('SURAT KETERANGAN AKTIF KULIAH') + 'adalah mahasiswa yang terdaftar dan aktif mengikuti perkuliahan pada semester berjalan di Fakultas Teknologi Informasi Universitas Andalas.\n\nSurat keterangan ini dibuat untuk keperluan orang tua: {{keperluan}}.',
+    // Template: database/templateResmi.js
   },
   {
     kode: 'KET-LULUS',
@@ -44,15 +45,21 @@ const LAYANAN = [
       ['Surat pengantar departemen yang menyatakan sudah lulus sidang atau ujian komprehensif', 1],
       ['Bukti kliring fakultas sudah selesai', 1],
       ['Bukti terdaftar di wisuda.unand.ac.id', 1],
+      // Ditempel ke surat ([[foto]] di template); hanya gambar agar bisa dicetak di PDF.
+      ['Pas foto 3x4', 1, 'jpg,png'],
     ],
-    isi: pembuka('SURAT KETERANGAN LULUS') + 'telah menyelesaikan seluruh persyaratan akademik dan dinyatakan lulus pada Fakultas Teknologi Informasi Universitas Andalas.\n\nSurat keterangan ini dibuat untuk keperluan: {{keperluan}}.',
+    // Template: database/templateResmi.js
   },
   {
     kode: 'TIDAK-BEASISWA',
     nama: 'Surat Keterangan Tidak Menerima Beasiswa',
     deskripsi: 'Pernyataan bahwa mahasiswa tidak sedang menerima beasiswa dari sumber lain.',
-    syarat: [],
-    isi: pembuka('SURAT KETERANGAN TIDAK MENERIMA BEASISWA') + 'berdasarkan data yang ada pada fakultas, tidak sedang menerima beasiswa dari sumber mana pun.\n\nSurat keterangan ini dibuat untuk keperluan: {{keperluan}}.',
+    // Formulir pernyataan diunduh dari sistem (sudah terisi data), ditandatangani di atas meterai, lalu
+    // diunggah sebagai PDF. Nama syarat harus sama dengan FORMULIR_MAHASISWA di src/utils/templateSurat.js.
+    syarat: [
+      ['Surat pernyataan bermeterai yang sudah ditandatangani (hasil pindai)', 1, 'pdf'],
+    ],
+    // Template: database/templateResmi.js
   },
   {
     kode: 'PENYESUAIAN-UKT',
@@ -84,7 +91,7 @@ const LAYANAN = [
     nama: 'Pengunduran Diri atau Pindah Mahasiswa',
     deskripsi: 'Permohonan pengunduran diri sebagai mahasiswa Fakultas Teknologi Informasi.',
     syarat: [],
-    isi: pembuka('SURAT PERMOHONAN PENGUNDURAN DIRI') + 'mengajukan permohonan pengunduran diri sebagai mahasiswa Fakultas Teknologi Informasi Universitas Andalas dengan alasan: {{keperluan}}.',
+    // Template: database/templateResmi.js (surat pengantar fakultas kepada Wakil Rektor I)
   },
   {
     kode: 'KLIRING-WISUDA',
@@ -99,6 +106,25 @@ const LAYANAN = [
   },
 ];
 
+// Penanda tangan uji (PALSU, migrasi 004). Nama dan NIP bukan pejabat sungguhan; staf mengganti dengan
+// data pejabat yang berlaku lewat aplikasi. NIP berawalan 99 agar tidak sama dengan nomor asli.
+const PENANDA_TANGAN = {
+  kakor: { nama: 'Pejabat Uji Kepala Kantor, S.Kom', nip: '990000000000000101', pangkat_golongan: 'Penata Tk. I / III/d', jabatan: 'Kepala Kantor Sekretariat' },
+  kasi: { nama: 'Pejabat Uji Kepala Seksi, S.E., M.M.', nip: '990000000000000102', pangkat_golongan: 'Penata Tk. I / III/d', jabatan: 'Kepala Seksi Umum & Akademik' },
+  wadek1: { nama: 'Pejabat Uji Wakil Dekan I, M.T.', nip: '990000000000000103', pangkat_golongan: null, jabatan: 'Wakil Dekan I' },
+  dekan: { nama: 'Pejabat Uji Dekan, M.T.', nip: '990000000000000104', pangkat_golongan: null, jabatan: 'Dekan' },
+};
+
+// Penanda tangan per layanan, mengikuti contoh surat resmi FTI: [kunci PENANDA_TANGAN, baris "atas nama"].
+// Layanan yang belum punya template resmi (Penyesuaian UKT, Pengembalian UKT, Kliring/Wisuda) belum ditunjuk.
+const PENUNJUKAN_TTD = {
+  'AKTIF-PRIBADI': ['kakor', 'a.n. Wakil Dekan I'],
+  'AKTIF-ORTU': ['kasi', 'a.n. Wakil Dekan I'],
+  'KET-LULUS': ['dekan', null],
+  'TIDAK-BEASISWA': ['wadek1', null],
+  'UNDUR-DIRI': ['wadek1', 'a.n. Dekan'],
+};
+
 // Akun uji (palsu). NIM/NIP berawalan 99 agar tidak sama dengan nomor asli.
 const AKUN = [
   { identifier: '9900000001', nama: 'Mahasiswa Uji Satu', email: 'mahasiswa1@contoh.test', role: 'mahasiswa', prodi: 'Sistem Informasi', jenjang: 'S1', angkatan: 2023, no_hp: '080000000001', is_active: 1 },
@@ -110,8 +136,20 @@ const AKUN = [
   { identifier: '990000000000000004', nama: 'Dekan Uji', email: 'dekan@contoh.test', role: 'dekan', is_active: 1 },
 ];
 
-// Seed butuh kolom dari migrasi 002 dan 003; beri pesan jelas bila belum dijalankan.
+// Seed butuh kolom dari migrasi 002 sampai 005; beri pesan jelas bila belum dijalankan.
 const pastikanMigrasi = async (conn) => {
+  const [kolomNomor] = await conn.query(
+    `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'template_surat' AND COLUMN_NAME = 'format_nomor'`
+  );
+  if (!kolomNomor.length) throw new Error('Kolom template_surat.format_nomor belum ada. Jalankan migrasi 005 lebih dulu.');
+  const [kolomTtd] = await conn.query(
+    `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'jenis_layanan' AND COLUMN_NAME IN ('penanda_tangan_id', 'atas_nama')`
+  );
+  if (kolomTtd.length < 2) {
+    throw new Error('Tabel penanda_tangan dan kolom jenis_layanan.penanda_tangan_id belum ada. Jalankan migrasi 004 lebih dulu.');
+  }
   const [kolom] = await conn.query(
     `SELECT COLUMN_NAME FROM information_schema.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME IN ('is_active', 'jenjang', 'angkatan')`
@@ -135,25 +173,54 @@ const seedLayanan = async (conn) => {
     const [[{ id }]] = await conn.query('SELECT id FROM jenis_layanan WHERE kode_layanan = ?', [layanan.kode]);
 
     // syarat_layanan tidak punya kunci unik; cek berdasarkan nama agar tidak dobel saat dijalankan ulang.
-    for (const [namaSyarat, wajib] of layanan.syarat) {
+    // [nama syarat, wajib, tipe file (opsional, bawaan TIPE_FILE)]
+    for (const [namaSyarat, wajib, tipeFile = TIPE_FILE] of layanan.syarat) {
       const [hasilSyarat] = await conn.query(
         `INSERT INTO syarat_layanan (jenis_layanan_id, nama_syarat, tipe_file, is_required)
          SELECT ?, ?, ?, ? FROM DUAL
          WHERE NOT EXISTS (SELECT 1 FROM syarat_layanan WHERE jenis_layanan_id = ? AND nama_syarat = ?)`,
-        [id, namaSyarat, TIPE_FILE, wajib, id, namaSyarat]
+        [id, namaSyarat, tipeFile, wajib, id, namaSyarat]
       );
       syaratBaru += hasilSyarat.affectedRows;
     }
 
     // Satu template per layanan (kunci unik jenis_layanan_id); template yang sudah ada tidak ditimpa.
+    // Layanan yang punya contoh surat resmi memakai database/templateResmi.js. Untuk database yang sudah
+    // berjalan, perbarui lewat: npm run template:resmi
+    const resmi = TEMPLATE_RESMI[layanan.kode];
     const [hasilTemplate] = await conn.query(
-      'INSERT IGNORE INTO template_surat (jenis_layanan_id, header_surat, body_template, footer_surat) VALUES (?, ?, ?, ?)',
-      [id, KEPALA_SURAT, layanan.isi, KAKI_SURAT]
+      'INSERT IGNORE INTO template_surat (jenis_layanan_id, header_surat, body_template, footer_surat, format_nomor) VALUES (?, ?, ?, ?, ?)',
+      resmi ? [id, resmi.header, resmi.isi, resmi.footer, resmi.formatNomor || null] : [id, KEPALA_SURAT, layanan.isi, KAKI_SURAT, null]
     );
     templateBaru += hasilTemplate.affectedRows;
   }
 
   console.log(`Jenis layanan baru: ${layananBaru}, syarat baru: ${syaratBaru}, template baru: ${templateBaru}`);
+};
+
+// Penanda tangan uji dan penunjukannya. Yang sudah ada tidak ditimpa: penanda tangan dicari lewat NIP,
+// dan layanan yang sudah punya penanda tangan (mungkin diatur staf) tidak diubah.
+const seedPenandaTangan = async (conn) => {
+  let baru = 0;
+  let ditunjuk = 0;
+  const idTtd = {};
+  for (const [kunci, pt] of Object.entries(PENANDA_TANGAN)) {
+    const [hasil] = await conn.query(
+      'INSERT IGNORE INTO penanda_tangan (nama, nip, pangkat_golongan, jabatan) VALUES (?, ?, ?, ?)',
+      [pt.nama, pt.nip, pt.pangkat_golongan, pt.jabatan]
+    );
+    baru += hasil.affectedRows;
+    const [[{ id }]] = await conn.query('SELECT id FROM penanda_tangan WHERE nip = ?', [pt.nip]);
+    idTtd[kunci] = id;
+  }
+  for (const [kode, [kunci, atasNama]] of Object.entries(PENUNJUKAN_TTD)) {
+    const [hasil] = await conn.query(
+      'UPDATE jenis_layanan SET penanda_tangan_id = ?, atas_nama = ? WHERE kode_layanan = ? AND penanda_tangan_id IS NULL',
+      [idTtd[kunci], atasNama, kode]
+    );
+    ditunjuk += hasil.affectedRows;
+  }
+  console.log(`Penanda tangan uji baru: ${baru}, layanan yang baru ditunjuk penanda tangannya: ${ditunjuk}`);
 };
 
 const seedAkun = async (conn, kataSandi) => {
@@ -197,6 +264,7 @@ const main = async () => {
     await pastikanMigrasi(conn);
     await conn.beginTransaction();
     await seedLayanan(conn);
+    await seedPenandaTangan(conn);
     await seedAkun(conn, kataSandi);
     await conn.commit();
     console.log('Seed selesai.');

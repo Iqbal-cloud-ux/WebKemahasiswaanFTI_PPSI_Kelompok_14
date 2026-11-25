@@ -2,7 +2,8 @@ import { useRef, useState } from 'react'
 import { AlertCircle, CheckCircle2, Eye, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { useDataServer } from '../../hooks/useDataServer.js'
 import {
-  bacaHasil, hapusLayananRequest, kelolaLayananRequest, simpanTemplateRequest, statusLayananRequest, tambahLayananRequest, ubahLayananRequest,
+  aturNomorUrutRequest, bacaHasil, hapusLayananRequest, kelolaLayananRequest, simpanTemplateRequest, statusLayananRequest,
+  tambahLayananRequest, ubahLayananRequest,
 } from '../../services/api.js'
 import { formatTanggal } from '../../utils/statusPengajuan.js'
 import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
@@ -13,16 +14,31 @@ const CONTOH_NILAI = {
   nama: 'Mahasiswa Contoh',
   nim: '9900000000',
   prodi: 'Sistem Informasi',
-  keperluan: 'Pendaftaran beasiswa',
+  keperluan: 'pengajuan Beasiswa ABC Tahun 2026',
+  semester_berjalan: 'Ganjil',
+  tahun_akademik: '2026/2027',
+  ttd_nama: 'Pejabat Contoh, S.Kom',
+  ttd_nip: '990000000000000000',
+  ttd_pangkat: 'Penata Tk. I / III/d',
+  ttd_jabatan: 'Kepala Kantor Sekretariat',
+  ttd_atas_nama: 'a.n. Wakil Dekan I',
   no_surat: '001/FTI/CONTOH/2026',
   tanggal: formatTanggal(new Date()),
 }
-const isiContoh = (teks = '') => String(teks).replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (asli, nama) => CONTOH_NILAI[nama] ?? asli)
+const ROMAWI = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
+// Contoh nomor dari format, sama dengan aturan server (server/src/utils/nomorSurat.js).
+const contohNomor = (format, urut) => {
+  const sekarang = new Date()
+  return String(format).replace(/\{(urut|tahun|bulan)\}/g, (_, nama) => (
+    nama === 'urut' ? String(urut) : nama === 'tahun' ? String(sekarang.getFullYear()) : ROMAWI[sekarang.getMonth()]
+  ))
+}
+const isiContoh = (teks = '', nilai = {}) => String(teks).replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (asli, nama) => nilai[nama] ?? CONTOH_NILAI[nama] ?? asli)
 
 // Kelola jenis layanan, syarat dokumen, dan template surat (#80). Satu layanan punya satu template.
 // Data dari GET /api/layanan/kelola; perubahan langsung berlaku untuk formulir pengajuan mahasiswa.
 export function LayananTemplatePage() {
-  const [kelola, muat] = useDataServer(kelolaLayananRequest, { layanan: [], variabel: {} })
+  const [kelola, muat] = useDataServer(kelolaLayananRequest, { layanan: [], variabel: {}, penanda_nomor: {}, nomor_urut: null })
   const [activeTab, setActiveTab] = useState('services')
   const [search, setSearch] = useState('')
   const [serviceEditor, setServiceEditor] = useState(null)
@@ -37,6 +53,10 @@ export function LayananTemplatePage() {
 
   const layanan = kelola.data.layanan
   const variabel = kelola.data.variabel
+  const penandaNomor = kelola.data.penanda_nomor || {}
+  const nomorUrut = kelola.data.nomor_urut
+  const [nomorTerakhir, setNomorTerakhir] = useState('')
+  const urutBerikutnya = (nomorUrut?.nomor_terakhir || 0) + 1
   const filtered = layanan.filter((item) => `${item.nama_layanan} ${item.kode_layanan}`.toLowerCase().includes(search.trim().toLowerCase()))
   const activeCount = layanan.filter((item) => item.is_active).length
 
@@ -108,7 +128,24 @@ export function LayananTemplatePage() {
       header_surat: item.template?.header_surat || '',
       body_template: item.template?.body_template || '',
       footer_surat: item.template?.footer_surat || '',
+      format_nomor: item.template?.format_nomor || '',
+      tanpa_nomor: Boolean(item.tanpa_nomor),
     })
+  }
+
+  // Menyisipkan {penanda} di akhir format nomor surat.
+  const sisipkanPenandaNomor = (nama) => setTemplateEditor((current) => ({ ...current, format_nomor: `${current.format_nomor}{${nama}}` }))
+
+  const saveNomorUrut = async (event) => {
+    event.preventDefault()
+    const nilai = nomorTerakhir.trim()
+    if (!/^\d{1,6}$/.test(nilai)) { setFormError(''); return tandaiSalah(document.getElementById('staff-nomor-urut')) }
+    const galat = await jalankan(
+      () => aturNomorUrutRequest(Number(nilai)),
+      `Nomor urut terakhir tahun ${nomorUrut?.tahun} disimpan. Surat berikutnya bernomor urut ${Number(nilai) + 1}.`,
+      () => setNomorTerakhir(''),
+    )
+    if (galat) setNotice({ type: 'error', message: galat })
   }
 
   // Menyisipkan {{variabel}} di posisi kursor pada kolom template yang terakhir difokuskan.
@@ -131,6 +168,7 @@ export function LayananTemplatePage() {
         header_surat: templateEditor.header_surat,
         body_template: templateEditor.body_template,
         footer_surat: templateEditor.footer_surat,
+        format_nomor: templateEditor.format_nomor,
       }),
       `Template ${templateEditor.nama_layanan} tersimpan. Draf baru akan memakai template ini.`,
       () => setTemplateEditor(null),
@@ -222,6 +260,18 @@ export function LayananTemplatePage() {
               <p>Satu template untuk setiap layanan. Template dipakai saat staf membuat draf surat; draf yang sudah tersimpan tidak ikut berubah.</p>
             </div>
           </div>
+          <form className="staff-nomor-urut" onSubmit={saveNomorUrut}>
+            <div>
+              <strong>Nomor urut surat {nomorUrut ? `tahun ${nomorUrut.tahun}` : ''}</strong>
+              <span>
+                Satu urutan untuk semua surat yang terbit, mulai dari 1 setiap tahun. Nomor terakhir yang terpakai: <b>{nomorUrut?.nomor_terakhir ?? '-'}</b>; surat berikutnya bernomor urut <b>{urutBerikutnya}</b>.
+                Ubah hanya untuk melanjutkan nomor dari buku agenda; nomor yang lebih kecil dari yang sudah dipakai bisa membuat penerbitan gagal karena nomor surat kembar.
+              </span>
+            </div>
+            <label htmlFor="staff-nomor-urut">Nomor urut terakhir</label>
+            <input id="staff-nomor-urut" inputMode="numeric" value={nomorTerakhir} onChange={(event) => setNomorTerakhir(event.target.value)} placeholder={String(nomorUrut?.nomor_terakhir ?? 0)} />
+            <button type="submit" className="staff-editor-save" disabled={saving || !nomorUrut}>Simpan</button>
+          </form>
           <div className="staff-table-wrap">
             <table className="staff-service-config-table staff-template-config-table">
               <thead><tr><th>Template / Layanan</th><th>Kode</th><th>Diperbarui</th><th>Status</th><th>Aksi</th></tr></thead>
@@ -285,11 +335,37 @@ export function LayananTemplatePage() {
                 <span>Sisipkan variabel:</span>
                 {Object.entries(variabel).map(([nama, arti]) => <button type="button" key={nama} title={arti} onClick={() => sisipkanVariabel(nama)}>{`{{${nama}}}`}</button>)}
               </div>
+              {templateEditor.tanpa_nomor ? (
+                <p className="staff-config-helper">Format nomor surat: layanan ini tidak memakai nomor surat, mengikuti contoh surat resmi.</p>
+              ) : (
+                <>
+                  <label htmlFor="staff-template-format_nomor">Format nomor surat</label>
+                  <input
+                    id="staff-template-format_nomor"
+                    maxLength={150}
+                    value={templateEditor.format_nomor}
+                    onChange={(event) => setTemplateEditor((current) => ({ ...current, format_nomor: event.target.value }))}
+                    placeholder="Contoh: B/{urut}/UN.16.15/KM.00.00/{tahun}"
+                  />
+                  <div className="staff-variabel-chips" aria-label="Sisipkan penanda nomor surat">
+                    <span>Penanda:</span>
+                    {Object.entries(penandaNomor).map(([nama, arti]) => <button type="button" key={nama} title={arti} onClick={() => sisipkanPenandaNomor(nama)}>{`{${nama}}`}</button>)}
+                  </div>
+                  <p className="staff-config-helper">
+                    {templateEditor.format_nomor.trim()
+                      ? <>Contoh nomor surat berikutnya: <b>{contohNomor(templateEditor.format_nomor.trim(), urutBerikutnya)}</b>. Wajib memuat {'{urut}'}.</>
+                      : 'Belum diatur. Surat layanan ini tidak bisa terbit sebelum format nomor diisi.'}
+                  </p>
+                </>
+              )}
               {templateField('header_surat', 'Kepala surat (setiap baris di tengah; baris pertama tebal)', 3)}
               {templateField('body_template', 'Isi surat (baris pertama berhuruf kapital = judul)', 10)}
               {templateField('footer_surat', 'Kaki surat (sebelum baris kosong = blok tanda tangan; sesudahnya = keterangan kecil)', 5)}
               <p className="staff-config-helper">Pratinjau dengan data contoh:</p>
-              <pre className="staff-template-preview-text">{[isiContoh(templateEditor.header_surat), isiContoh(templateEditor.body_template), isiContoh(templateEditor.footer_surat)].filter(Boolean).join('\n\n')}</pre>
+              <pre className="staff-template-preview-text">{(() => {
+                const nilai = templateEditor.format_nomor.trim() ? { no_surat: contohNomor(templateEditor.format_nomor.trim(), urutBerikutnya) } : {}
+                return [templateEditor.header_surat, templateEditor.body_template, templateEditor.footer_surat].map((t) => isiContoh(t, nilai)).filter(Boolean).join('\n\n')
+              })()}</pre>
               {formError && <p className="staff-editor-error" role="alert">{formError}</p>}
               <div className="staff-editor-actions"><button type="button" className="staff-editor-cancel" onClick={() => setTemplateEditor(null)}>Batal</button><button type="submit" className="staff-editor-save" disabled={saving}>Simpan Template</button></div>
             </form>

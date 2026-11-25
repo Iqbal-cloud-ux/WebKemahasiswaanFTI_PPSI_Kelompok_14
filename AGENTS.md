@@ -206,7 +206,6 @@ Pengguna tanpa login selalu diarahkan ke halaman login. Penolakan akses memakai 
 ## Yang belum diputuskan (tanyakan sebelum mengerjakan)
 
 - Syarat sewa baju wisuda (belum ada sumbernya), dan cara menangani pindah mahasiswa.
-- Penomoran surat: format resmi FTI belum dikonfirmasi.
 - Mekanisme TTE sungguhan (Internal Engine atau BSrE) dan masa retensi arsip.
 - Status "S1 reguler" untuk Permohonan Penyesuaian UKT belum disimpan di database (saat ini hanya
   jenjang S1 yang diperiksa).
@@ -214,5 +213,7 @@ Pengguna tanpa login selalu diarahkan ke halaman login. Penolakan akses memakai 
 Sudah diputuskan (24 November 2026): pemetaan status di `docs/alur-status.md` (ENUM database ke label
 antarmuka) dan penyimpanan status draf di `surat_resmi.status_draf` (migrasi 002).
 Pembuat PDF memakai **PDFKit** (pembuat QR: `qrcode`).
+Penomoran surat (25 November 2026): format nomor diatur Staf Akademik per jenis layanan (penanda `{urut}`,
+`{tahun}`, `{bulan}`); nomor urut satu urutan untuk semua surat, mulai dari 1 setiap tahun (migrasi 005).
 Notifikasi saat ini hanya di dalam aplikasi; pengiriman lewat email (untuk surat selesai, disetujui,
 ditolak, atau perlu perbaikan) dikerjakan belakangan.

@@ -48,7 +48,8 @@ Menulis log_aktivitas untuk tindakan penting.
 Ketiga langkah pertama dijalankan dalam satu transaksi database, agar tidak ada status yang berubah tanpa riwayat atau notifikasi.
 
 Penerbitan surat (saat Dekan menyetujui)
-Pastikan nomor surat sudah dibuat otomatis (format resmi FTI [BELUM FINAL]) dan tidak kembar (surat_resmi.no_surat unik).
+Buat nomor surat otomatis dari format nomor layanan (template_surat.format_nomor, diatur staf) dan nomor urut berikutnya (satu urutan untuk semua surat per tahun, tabel nomor_surat_urut), lewat buatNomorSurat di server/src/utils/nomorSurat.js di dalam transaksi penerbitan. Nomor tidak boleh kembar (surat_resmi.no_surat unik). Bila format belum diatur, penerbitan gagal dengan pesan dan status tetap pending_dekan. Pengecualian: layanan di LAYANAN_TANPA_NOMOR (server/src/utils/templateSurat.js; saat ini Tidak Menerima Beasiswa) tidak bernomor; buatNomorSurat mengembalikan null, no_surat dibiarkan kosong, dan QR memuat nomor pengajuan (no_referensi) beserta hash.
+Layanan berformulir (FORMULIR_MAHASISWA; saat ini Tidak Menerima Beasiswa): PDF final dibuat dengan menempelkan QR dan keterangan persetujuan elektronik ke pindaian unggahan mahasiswa (PDF draf), bukan membuat surat baru dari template (butuh library pdf-lib, #95).
 Hitung hash SHA-256 isi surat; simpan di surat_resmi.hash_sha256.
 Buat QR yang memuat nomor surat dan hash (simpan di surat_resmi.qr_code_path); tempel ke PDF final.
 Simpan PDF final di server/uploads/letters/ dan path-nya di surat_resmi.file_pdf_path; isi tgl_terbit.

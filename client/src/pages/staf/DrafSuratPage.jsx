@@ -186,8 +186,10 @@ export function DrafSuratPage() {
                 {editor.data.pengembalian && <div className="staff-notice error staff-draft-kembali"><AlertCircle size={15} /><span><strong>Dikembalikan oleh {NAMA_PIMPINAN[editor.data.pengembalian.role_pimpinan] || 'pimpinan'}:</strong> {editor.data.pengembalian.catatan}</span></div>}
                 {editor.data.pengajuan.keperluan && <p className="staff-editor-note">Keperluan: {editor.data.pengajuan.keperluan}</p>}
                 <label htmlFor="staff-draft-content">Isi draf (kepala dan kaki surat diambil dari template layanan)</label>
-                <textarea id="staff-draft-content" rows="14" maxLength={20000} readOnly={!bisaDiubah} value={editor.isi} onChange={(event) => setEditor((current) => ({ ...current, isi: event.target.value }))} />
-                <p className="staff-editor-note">{bisaDiubah
+                <textarea id="staff-draft-content" rows="14" maxLength={20000} readOnly={!bisaDiubah || editor.data.formulir_mahasiswa} value={editor.isi} onChange={(event) => setEditor((current) => ({ ...current, isi: event.target.value }))} />
+                <p className="staff-editor-note">{bisaDiubah && editor.data.formulir_mahasiswa
+                  ? 'Layanan ini memakai pernyataan bermeterai yang diunggah mahasiswa. Tekan Pratinjau untuk melihat pindaiannya, Simpan, lalu Teruskan.'
+                  : bisaDiubah
                   ? <>{'{{no_surat}}'} dan {'{{tanggal}}'} biarkan apa adanya; keduanya diisi otomatis saat Dekan menyetujui.{belumDisimpan ? ' Ada perubahan yang belum disimpan.' : ''}</>
                   : `Draf sedang dalam proses persetujuan (${statusStaf(editor.data.pengajuan.status).label}) dan tidak bisa diubah.`}</p>
                 {editorError && <p className="staff-editor-error" role="alert">{editorError}</p>}
