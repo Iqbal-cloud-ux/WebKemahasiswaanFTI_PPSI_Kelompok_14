@@ -7,3 +7,4 @@ server/uploads/requirements/*
 !server/uploads/letters/.gitkeep
 !server/uploads/requirements/.gitkeep
 graphify-out/
+template-resmi/
