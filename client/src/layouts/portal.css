@@ -63,8 +63,6 @@
 .staff-profile-popover button { margin-top: 8px; }
 .staff-profile-popover .staff-profile-logout { color: #a52e32; }
 .student-nav-badge { min-width: 18px; height: 18px; display: grid; place-items: center; margin-left: auto; padding: 0 5px; border-radius: 9px; color: #fff; background: #116d38; font-size: 9px; font-weight: 700; }
-.student-side-logout { margin-top: 4px; color: #a52e32; }
-.student-side-logout:hover { color: #a52e32; background: #fff3f3; }
 .student-bell.active { color: #126d3a; }
 
 /* Pratinjau berkas persyaratan (components/PratinjauBerkas.jsx), dipakai portal mahasiswa dan staf. */

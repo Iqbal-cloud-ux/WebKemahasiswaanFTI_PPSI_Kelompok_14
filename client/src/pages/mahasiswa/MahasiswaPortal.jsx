@@ -7,6 +7,7 @@ import { useDataServer } from '../../hooks/useDataServer.js'
 import { bacaHasil, bacaNotifikasiRequest, bacaSemuaNotifikasiRequest, daftarLayananRequest, notifikasiRequest, pengajuanSayaRequest } from '../../services/api.js'
 import { formatTanggal, statusMahasiswa, tanggalIso } from '../../utils/statusPengajuan.js'
 import { BerandaMahasiswaPage } from './BerandaMahasiswaPage.jsx'
+import { DetailRiwayatPage } from './DetailRiwayatPage.jsx'
 import { NotifikasiPage } from './NotifikasiPage.jsx'
 import { PengajuanPage } from './PengajuanPage.jsx'
 import { PerbaikanPage } from './PerbaikanPage.jsx'
@@ -27,7 +28,7 @@ const INTERVAL_PERBARUI_MS = 60 * 1000
 
 const viewFromPath = (pathname) => {
   const path = pathname.replace(/\/+$/, '')
-  if (path.startsWith(PERBAIKAN_PATH)) return 'history'
+  if (path.startsWith(PERBAIKAN_PATH) || path.startsWith(`${VIEW_PATHS.history}/`)) return 'history'
   return Object.keys(VIEW_PATHS).find((view) => VIEW_PATHS[view] === path) || null
 }
 
@@ -77,10 +78,12 @@ export function MahasiswaPortal({ user, onUpdateUser, onLogout }) {
   // Layanan yang dipilih di Beranda (id jenis layanan) dibawa lewat state navigasi.
   const openApplication = (layananId = null) => openView('apply', { layananId })
 
-  // submissionId = nomor referensi (PGJ-...), dipakai untuk memilih baris di Riwayat.
+  // submissionId = nomor referensi (PGJ-...). Membuka halaman detail pengajuan itu; barisnya
+  // ditandai di Riwayat saat mahasiswa kembali.
   const openSubmission = (submissionId) => {
+    setMenuOpen(false)
     setSelectedSubmissionId(submissionId)
-    openView('history')
+    navigate(`${VIEW_PATHS.history}/${encodeURIComponent(submissionId)}`)
   }
 
   const openPerbaikan = (pengajuanId) => {
@@ -121,7 +124,8 @@ export function MahasiswaPortal({ user, onUpdateUser, onLogout }) {
           <Route index element={<BerandaMahasiswaPage user={user} pengajuan={dataPengajuan} layanan={layanan} onApply={openApplication} onOpenSubmission={openSubmission} onPerbaiki={openPerbaikan} />} />
           {/* key = location.key: setiap membuka menu ini, formulir dimulai dari awal. */}
           <Route path="pengajuan" element={<PengajuanPage key={location.key} user={user} layanan={layanan} initialLayananId={location.state?.layananId ?? null} onCancel={() => openView('home')} onSubmitted={afterSubmit} onOpenHistory={() => openView('history')} />} />
-          <Route path="riwayat" element={<RiwayatPage pengajuan={dataPengajuan} layanan={layanan.data} selectedSubmissionId={selectedSubmissionId} setSelectedSubmissionId={setSelectedSubmissionId} onPerbaiki={openPerbaikan} />} />
+          <Route path="riwayat" element={<RiwayatPage pengajuan={dataPengajuan} layanan={layanan.data} selectedSubmissionId={selectedSubmissionId} onOpenDetail={openSubmission} />} />
+          <Route path="riwayat/:noReferensi" element={<DetailRiwayatPage pengajuan={dataPengajuan} onPerbaiki={openPerbaikan} onKembali={() => openView('history')} />} />
           <Route path="perbaikan/:id" element={<PerbaikanPage key={location.key} onSelesai={(hasil) => { muatPengajuan(); muatNotifikasi(); setSelectedSubmissionId(hasil.no_referensi) }} onOpenHistory={() => openView('history')} />} />
           <Route path="notifikasi" element={<NotifikasiPage notifikasi={notifikasi} onBaca={bacaNotifikasi} onBacaSemua={bacaSemuaNotifikasi} onOpenSubmission={openSubmission} />} />
           <Route path="profil" element={<ProfilMahasiswaPage user={user} onUpdateUser={onUpdateUser} />} />

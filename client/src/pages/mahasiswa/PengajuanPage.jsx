@@ -11,10 +11,11 @@ const LANGKAH = ['Pilih Layanan', 'Isi Formulir & Unggah Dokumen', 'Tinjau & Kir
 
 // Formulir pengajuan 3 langkah: Pilih Layanan, Isi Formulir & Unggah Dokumen, Tinjau & Kirim.
 // layanan = { status, data, pesan } dari MahasiswaPortal; initialLayananId terisi bila mahasiswa
-// menekan "Ajukan" pada katalog layanan di Beranda.
+// menekan "Ajukan" pada katalog layanan di Beranda. Memilih layanan (di Beranda atau di langkah 1)
+// langsung membuka langkah 2, tanpa tombol Lanjut.
 export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel, onSubmitted, onOpenHistory }) {
   const [selectedId, setSelectedId] = useState(initialLayananId)
-  const [step, setStep] = useState(1)
+  const [stepDipilih, setStep] = useState(initialLayananId ? 2 : 1)
   const [keperluan, setKeperluan] = useState('')
   const [isian, setIsian] = useState({}) // isian tambahan layanan (misalnya data orang tua): nama -> nilai
   const [noHp, setNoHp] = useState(user.no_hp || '')
@@ -30,6 +31,8 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
 
   const selected = layanan.data.find((item) => item.id === selectedId)
   const selectedAllowed = selected && selected.kelayakan?.boleh !== false
+  // Layanan dari Beranda yang tidak ditemukan atau tidak boleh diajukan: tampilkan langkah 1 beserta alasannya.
+  const step = stepDipilih > 1 && layanan.status !== 'memuat' && !selectedAllowed ? 1 : stepDipilih
   const syarat = selected?.syarat || []
   const missingRequired = syarat.filter((item) => item.is_required && !files[item.id])
   // Layanan dengan keperluan tetap (misalnya Aktif Kuliah Orang Tua) tidak menampilkan kolom Keperluan.
@@ -54,10 +57,11 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
     }
     setSelectedId(item.id)
     setError('')
+    setStep(2)
   }
 
   // Langkah 2 tidak menonaktifkan tombol Lanjut, agar mahasiswa mendapat pesan apa yang masih kurang.
-  const canContinue = step === 1 ? Boolean(selectedAllowed) : true
+  const canContinue = Boolean(selectedAllowed)
   const goNext = () => {
     // Kolom kosong cukup ditandai merah dan difokuskan; dokumen yang kurang tetap disebutkan namanya.
     if (step === 2 && !keperluanTetap && !keperluan.trim()) { setError(''); return tandaiSalah(document.getElementById('purpose')) }
@@ -151,7 +155,7 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
 
       {step === 1 && (
         <section className="flow-card">
-          <div className="flow-card-heading"><h2>Pilih layanan yang ingin diajukan</h2><p>Pilih salah satu layanan untuk melanjutkan pengajuan.</p></div>
+          <div className="flow-card-heading"><h2>Pilih layanan yang ingin diajukan</h2><p>Klik salah satu layanan untuk langsung mengisi formulir.</p></div>
           <StatusMuat state={layanan} kosong="Belum ada layanan yang dibuka." />
           <div className="service-choice-list">
             {layanan.data.map((item) => {
@@ -167,6 +171,8 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
           </div>
         </section>
       )}
+
+      {step > 1 && !selected && <StatusMuat state={layanan} kosong="" />}
 
       {step === 2 && selected && (
         <section className="form-flow-grid">
@@ -246,9 +252,9 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
       {error && <div className="flow-error" role="alert"><AlertCircle size={15} />{error}</div>}
       <div className="flow-actions">
         <button type="button" className="outline-button" disabled={sending} onClick={step === 1 ? onCancel : () => { setError(''); setStep((current) => current - 1) }}>{step === 1 ? 'Kembali ke Beranda' : 'Kembali'}</button>
-        {step < 3
+        {step === 2
           ? <button type="button" className="primary-button" disabled={!canContinue} onClick={goNext}>Lanjut <ChevronRight size={15} /></button>
-          : <button type="button" className="primary-button" disabled={sending} onClick={submit}>{sending ? 'Mengirim...' : 'Kirim Pengajuan'} {!sending && <ChevronRight size={15} />}</button>}
+          : step === 3 && <button type="button" className="primary-button" disabled={sending} onClick={submit}>{sending ? 'Mengirim...' : 'Kirim Pengajuan'} {!sending && <ChevronRight size={15} />}</button>}
       </div>
     </div>
   )

@@ -10,21 +10,21 @@ Pengguna belum login yang membuka halaman lain: diarahkan ke Login [A3].
 Logout mengakhiri sesi; tombol Back peramban tidak boleh membuka halaman terproteksi lagi [A3].
 Mahasiswa
 
-Menu: Beranda, Pengajuan Layanan, Riwayat Pengajuan, Notifikasi, Profil.
+Menu: Beranda, Pengajuan Layanan, Riwayat Pengajuan, Notifikasi. Profil dan Keluar ada di menu akun (tombol avatar di bar atas), tidak diulang di sidebar.
 
 Beranda [A3]: kartu statistik (Diproses, Perlu Perbaikan, Selesai), banner peringatan bila ada pengajuan yang perlu diperbaiki, daftar pengajuan terbaru, dan katalog layanan.
 Klik banner revisi atau pengajuan "Perlu Perbaikan": ke halaman pengajuan tersebut untuk memperbaiki berkas [USULAN].
 Klik kartu layanan di katalog: mulai pengajuan untuk layanan itu [USULAN].
 Pengajuan Layanan (stepper 3 tahap) [A3]:
-Pilih Layanan: daftar jenis surat beserta syarat dokumen. Pilih satu layanan, lalu lanjut.
+Pilih Layanan: daftar jenis surat beserta syarat dokumen. Klik satu layanan untuk langsung masuk ke tahap Isi Formulir (tanpa tombol Lanjut). Tombol Ajukan di katalog Beranda juga langsung membuka tahap ini; bila layanan itu tidak boleh diajukan, yang tampil tahap Pilih Layanan beserta alasannya.
 Isi Formulir dan Unggah Dokumen: data profil terisi otomatis; layanan tertentu meminta isian tambahan yang dicetak di surat (misalnya data orang tua untuk Aktif Kuliah Orang Tua), dan layanan dengan keperluan tetap tidak menampilkan kolom Keperluan; layanan berformulir (Tidak Menerima Beasiswa) menampilkan tombol Unduh formulir terisi beserta petunjuk cetak, tempel meterai, tanda tangan, pindai, dan unggah PDF; area tarik-dan-lepas untuk berkas persyaratan dengan validasi format dan ukuran (PDF/JPG/PNG, maks 5 MB). Pengajuan tidak bisa dilanjutkan sebelum semua dokumen wajib terunggah; sistem menampilkan daftar yang kurang.
 Tinjau dan Kirim: ringkasan seluruh data dan berkas. Tombol Kirim menyimpan pengajuan, memberi nomor referensi, dan mengubah status menjadi Diajukan.
 Setelah Kirim: halaman Pengajuan Berhasil Terkirim dengan ringkasan data yang dikirim [A3]. Dari sana mahasiswa menuju halaman pantau status [USULAN].
 Surat Pengajuan / Pantau Status [A3]: linimasa progres secara real-time. Bila status Selesai, tampil tombol Unduh Surat (PDF ber-QR). Bila Perlu Perbaikan, tampil catatan staf dan jalan ke perbaikan berkas.
 Tombol Unduh hanya aktif untuk status Selesai; bila berkas hilang tampil "Gagal mengunduh file surat" [A3].
 Perbaiki dan Ajukan Ulang [A3]: mahasiswa melihat catatan, memperbaiki isian tambahan bila ada, mengunggah berkas pengganti, lalu mengajukan ulang; status kembali ke Diajukan.
-Riwayat Pengajuan [A3]: semua pengajuan dengan filter dan pencarian; klik satu baris untuk melihat detail dan tombol unduh surat bila Selesai.
-Notifikasi [A3]: daftar semua pemberitahuan; klik satu item membuka Detail Notifikasi.
+Riwayat Pengajuan [A3]: semua pengajuan dengan filter dan pencarian; klik satu baris (atau tombol Lihat Detail) untuk membuka halaman Detail Pengajuan (/mahasiswa/riwayat/<nomor pengajuan>) yang menggantikan daftar: linimasa status, berkas pendukung, catatan staf, tombol Perbaiki atau Unduh Surat bila Selesai, dan tombol Kembali ke Riwayat. Lihat Detail dari Beranda dan Notifikasi juga membuka halaman ini.
+Notifikasi [A3]: daftar semua pemberitahuan dengan tiga tab: Semua Notifikasi, Belum Dibaca, dan Sudah Dibaca (masing-masing dengan jumlahnya); klik satu item membuka Detail Notifikasi.
 Profil [A3]: data akademik (hanya baca), ubah kontak (email, nomor telepon), ganti kata sandi.
 Staf Akademik
 

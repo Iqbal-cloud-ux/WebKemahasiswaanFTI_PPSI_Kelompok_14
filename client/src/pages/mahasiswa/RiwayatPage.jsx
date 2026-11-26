@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Eye, MoreHorizontal, Search } from 'lucide-react'
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { StatusMuat } from './BerandaMahasiswaPage.jsx'
-import { DetailPengajuan } from './DetailPengajuan.jsx'
 
 const PAGE_SIZE = 5
 
 // Riwayat pengajuan milik mahasiswa yang sedang login, dengan pencarian dan filter.
 // pengajuan = { status, data, pesan } dari MahasiswaPortal; layanan = daftar layanan untuk filter jenis surat.
-export function RiwayatPage({ pengajuan, layanan, selectedSubmissionId, setSelectedSubmissionId, onPerbaiki }) {
+// Klik baris (atau tombol Lihat Detail) membuka halaman detail pengajuan (DetailRiwayatPage.jsx);
+// selectedSubmissionId = baris yang terakhir dibuka, diberi warna saat kembali ke daftar.
+export function RiwayatPage({ pengajuan, layanan, selectedSubmissionId, onOpenDetail }) {
   const submissions = pengajuan.data
   const [historySearch, setHistorySearch] = useState('')
   const [historyService, setHistoryService] = useState('')
@@ -26,7 +27,6 @@ export function RiwayatPage({ pengajuan, layanan, selectedSubmissionId, setSelec
     .sort((first, second) => historySort === 'oldest' ? first.dateValue.localeCompare(second.dateValue) : second.dateValue.localeCompare(first.dateValue))
   const historyPageCount = Math.max(1, Math.ceil(filteredSubmissions.length / PAGE_SIZE))
   const visibleSubmissions = filteredSubmissions.slice((historyPage - 1) * PAGE_SIZE, historyPage * PAGE_SIZE)
-  const selectedSubmission = filteredSubmissions.find((submission) => submission.id === selectedSubmissionId) || filteredSubmissions[0]
 
   return (
     <>
@@ -46,12 +46,10 @@ export function RiwayatPage({ pengajuan, layanan, selectedSubmissionId, setSelec
               <div className="section-heading"><h2>Daftar Pengajuan</h2><p>{filteredSubmissions.length} pengajuan. Hanya data pengajuan milik Anda.</p></div>
               {pengajuan.status !== 'siap' && <StatusMuat state={pengajuan} kosong="" />}
               <div className="history-table-wrap"><table className="history-table"><thead><tr><th>Nomor Pengajuan</th><th>Jenis Surat</th><th>Tanggal Diajukan <button type="button" className="sort-indicator" onClick={() => setHistorySort((sort) => sort === 'newest' ? 'oldest' : 'newest')} aria-label="Urutkan tanggal"><ArrowRight size={12} /></button></th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-                {visibleSubmissions.map((submission) => <tr key={submission.id} className={selectedSubmission?.id === submission.id ? 'selected' : ''} onClick={() => setSelectedSubmissionId(submission.id)}><td><strong>{submission.id}</strong><small>{submission.applicant}</small></td><td>{submission.title}</td><td>{submission.date}</td><td><span className={`status-pill ${submission.tone}`}><span />{submission.status}</span></td><td><div className="history-row-actions"><button type="button" title="Lihat detail" aria-label={`Lihat detail ${submission.id}`} onClick={(event) => { event.stopPropagation(); setSelectedSubmissionId(submission.id) }}><Eye size={15} /></button><button type="button" title="Aksi lainnya" aria-label={`Aksi lainnya ${submission.id}`} onClick={(event) => { event.stopPropagation(); setSelectedSubmissionId(submission.id) }}><MoreHorizontal size={16} /></button></div></td></tr>)}
+                {visibleSubmissions.map((submission) => <tr key={submission.id} className={selectedSubmissionId === submission.id ? 'selected' : ''} onClick={() => onOpenDetail(submission.id)}><td><strong>{submission.id}</strong><small>{submission.applicant}</small></td><td>{submission.title}</td><td>{submission.date}</td><td><span className={`status-pill ${submission.tone}`}><span />{submission.status}</span></td><td><button type="button" className="small-button history-lihat-detail" aria-label={`Lihat detail ${submission.id}`} onClick={(event) => { event.stopPropagation(); onOpenDetail(submission.id) }}>Lihat Detail <ChevronRight size={13} /></button></td></tr>)}
                 {pengajuan.status === 'siap' && visibleSubmissions.length === 0 && <tr><td className="history-empty" colSpan="5">{submissions.length === 0 ? 'Belum ada pengajuan.' : 'Tidak ada pengajuan yang sesuai dengan filter.'}</td></tr>}
               </tbody></table></div>
               <div className="history-pagination"><span>Menampilkan {filteredSubmissions.length ? (historyPage - 1) * PAGE_SIZE + 1 : 0}–{Math.min(historyPage * PAGE_SIZE, filteredSubmissions.length)} dari {filteredSubmissions.length} pengajuan</span><div><button type="button" aria-label="Halaman sebelumnya" disabled={historyPage === 1} onClick={() => setHistoryPage((page) => page - 1)}><ChevronLeft size={15} /></button><button type="button" className="current-page" aria-current="page">{historyPage}</button><button type="button" aria-label="Halaman selanjutnya" disabled={historyPage >= historyPageCount} onClick={() => setHistoryPage((page) => page + 1)}><ChevronRight size={15} /></button></div></div>
-              
-              {selectedSubmission && <DetailPengajuan key={selectedSubmission.pengajuanId} submission={selectedSubmission} onPerbaiki={onPerbaiki} />}
             </section>
     </>
   )

@@ -3,6 +3,7 @@ import { Bell, ChevronDown, FilePlus2, GraduationCap, History, Home, LogOut, Men
 
 // Kerangka halaman mahasiswa: sidebar kiri + topbar, sama dengan halaman staf
 // (memakai kelas CSS staff-* di layouts/portal.css agar tampilan dan perilaku HP identik).
+// Profil dan Keluar hanya ada di menu akun (tombol avatar di bar atas), tidak diulang di sidebar.
 const NAVIGATION = [
   { view: 'home', label: 'Beranda', icon: Home },
   { view: 'apply', label: 'Pengajuan Layanan', icon: FilePlus2 },
@@ -39,9 +40,6 @@ export function StudentLayout({ user, activeView, unreadCount, sidebarOpen, setS
             </button>
           ))}
         </nav>
-        <div className="staff-side-divider" />
-        <button type="button" className={`staff-side-link${activeView === 'profile' ? ' active' : ''}`} onClick={() => navigate('profile')}><UserRound size={16} /><span>Profil</span></button>
-        <button type="button" className="staff-side-link student-side-logout" onClick={onLogout}><LogOut size={16} /><span>Keluar</span></button>
         <div className="staff-sidebar-footer">Fakultas Teknologi Informasi<br />Universitas Andalas</div>
       </aside>
       {sidebarOpen && <button type="button" className="staff-sidebar-overlay" onClick={() => setSidebarOpen(false)} aria-label="Tutup menu navigasi" />}

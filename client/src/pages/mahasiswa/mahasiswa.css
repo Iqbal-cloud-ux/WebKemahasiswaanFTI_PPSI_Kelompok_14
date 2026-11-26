@@ -8,7 +8,15 @@
 .primary-button:hover { background: #0c5d2f; }
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .stat-card { min-height: 135px; padding: 17px; border: 1px solid #dfe7ec; border-radius: 7px; background: #fff; }
-.stat-card.warning { background: #fff8ee; border-color: #f0dfc7; }
+/* Warna per kartu statistik Beranda (BerandaMahasiswaPage.jsx): latar muda, garis, dan ikon sewarna. */
+.stat-card.biru { background: #eef5ff; border-color: #cfe0fb; }
+.stat-card.biru .stat-icon { color: #2860c4; }
+.stat-card.oranye { background: #fff8ee; border-color: #f0dfc7; }
+.stat-card.oranye .stat-icon { color: #c2611b; }
+.stat-card.hijau { background: #effdf4; border-color: #bfe9cf; }
+.stat-card.hijau .stat-icon { color: #116d38; }
+.stat-card.ungu { background: #f6f2ff; border-color: #ddd2f7; }
+.stat-card.ungu .stat-icon { color: #754bd1; }
 .stat-card > span, .stat-card p, .section-kicker { color: #64727e; font-size: 10px; }
 .stat-icon { margin-top: 10px; color: #c25519; }
 .stat-card > strong { display: block; margin-top: 8px; color: #121b2b; font-size: 22px; }
@@ -138,21 +146,20 @@
 .history-results { margin-top: 20px; }
 .history-results .section-heading p { margin: -6px 0 9px; color: #75828c; font-size: 10px; }
 .history-table-wrap { overflow-x: auto; border: 1px solid #dfe7ec; border-radius: 6px; background: #fff; }
-.history-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
-.history-table th { height: 37px; padding: 0 12px; color: #53616d; background: #fbfcfc; font-size: 9px; font-weight: 700; white-space: nowrap; }
-.history-table td { height: 45px; padding: 7px 12px; border-top: 1px solid #edf0f2; color: #53616d; white-space: nowrap; }
+.history-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; }
+.history-table th { height: 38px; padding: 0 14px; color: #53616d; background: #f6f8f9; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.history-table td { height: 50px; padding: 8px 14px; border-top: 1px solid #edf0f2; color: #53616d; white-space: nowrap; }
 .history-table tbody tr { cursor: pointer; }
 .history-table tbody tr:hover, .history-table tbody tr.selected { background: #f0fbf4; }
 .history-table td:first-child strong, .history-table td:first-child small { display: block; }
-.history-table td:first-child strong { color: #344252; font-size: 9px; }
-.history-table td:first-child small { margin-top: 3px; color: #82909a; font-size: 8px; }
-.history-table .status-pill { margin: 0; font-size: 8px; }
+.history-table td:first-child strong { color: #172033; font-size: 11px; }
+.history-table td:first-child small { margin-top: 3px; color: #82909a; font-size: 9px; }
+.history-table .status-pill { margin: 0; font-size: 9px; }
 .status-pill.amber { color: #ad7412; background: #fff7df; }
 .status-pill.red { color: #b03b3b; background: #fff0ef; }
 .sort-indicator { display: inline-grid; place-items: center; padding: 0; transform: rotate(90deg); border: 0; color: #657380; background: transparent; cursor: pointer; }
-.history-row-actions { display: flex; justify-content: flex-end; gap: 4px; }
-.history-row-actions button { display: grid; place-items: center; width: 25px; height: 25px; border: 0; border-radius: 4px; color: #64727e; background: transparent; cursor: pointer; }
-.history-row-actions button:hover { color: #116d38; background: #e8f6ed; }
+.history-lihat-detail { height: 27px; gap: 3px; padding: 0 9px; font-weight: 700; }
+.history-lihat-detail:hover { background: #e8f6ed; }
 .history-empty { height: 70px !important; color: #75828c !important; text-align: center; }
 .history-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; color: #75828c; font-size: 9px; }
 .history-pagination > div { display: flex; gap: 4px; }
@@ -183,6 +190,11 @@
 .notifications-toolbar .outline-button { margin: 0; }
 .notifications-toolbar .outline-button:disabled { border-color: #cbd5da; color: #9aa5ac; cursor: not-allowed; }
 .notifications-list h2 { margin: 0 0 13px; color: #172033; font-size: 15px; }
+.notification-tabs { display: flex; overflow-x: auto; margin: 0 0 16px; border-bottom: 1px solid #dfe7ec; scrollbar-width: thin; }
+.notification-tabs button { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; flex: 0 0 auto; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; color: #526170; background: transparent; font-size: 11px; cursor: pointer; }
+.notification-tabs button.active { border-bottom-color: #116d38; color: #116d38; font-weight: 700; }
+.notification-tab-count { min-width: 20px; padding: 1px 6px; border-radius: 9px; color: #526170; background: #eef2f4; font-size: 10px; font-weight: 700; text-align: center; }
+.notification-tabs button.active .notification-tab-count { color: #fff; background: #116d38; }
 .notification-item { margin-bottom: 12px; }
 .notification-meta { display: flex; align-items: center; gap: 7px; min-height: 25px; }
 .notification-meta .status-pill { margin: 0; }
@@ -260,7 +272,10 @@
 .result-card .flow-actions .primary-button { margin: 0; }
 
 /* Detail pengajuan di Riwayat (pages/mahasiswa/DetailPengajuan.jsx) dan halaman Perbaikan. */
-.history-detail.history-detail-lengkap { display: block; }
+.history-detail.history-detail-lengkap { display: block; margin-top: 0; padding: 20px; }
+.history-detail-lengkap > header small { font-size: 10px; }
+.history-detail-lengkap > header h3 { font-size: 17px; }
+.history-detail-lengkap > header p { font-size: 11px; }
 .history-detail-lengkap > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .history-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .history-detail-actions .small-button { display: inline-flex; align-items: center; gap: 5px; }
@@ -269,24 +284,29 @@
 .history-detail-catatan strong { font-size: 11px; }
 .history-detail-catatan p { margin: 3px 0 0 !important; color: #7a4a1c !important; font-size: 11px !important; line-height: 1.5; }
 .history-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px; margin-top: 16px; }
-.history-detail-grid h4 { margin: 0 0 10px; color: #172033; font-size: 12px; }
+.history-detail-grid > section { min-width: 0; padding: 14px; border: 1px solid #e3e9ed; border-radius: 6px; background: #fbfcfc; }
+.history-detail-grid h4 { margin: 0 0 12px; color: #172033; font-size: 13px; }
 .status-timeline { margin: 0; padding: 0; list-style: none; }
 .status-timeline li { position: relative; display: flex; gap: 10px; padding-bottom: 14px; }
 .status-timeline li:not(:last-child)::before { content: ''; position: absolute; top: 18px; bottom: 0; left: 8px; width: 1px; background: #cfe3d7; }
 .status-timeline-dot { display: grid; place-items: center; flex: 0 0 17px; height: 17px; border-radius: 50%; color: #fff; background: #168043; }
-.status-timeline strong { display: block; color: #172033; font-size: 11px; }
+.status-timeline strong { display: block; color: #172033; font-size: 12px; }
 .status-timeline p { margin: 2px 0 !important; font-size: 10px !important; }
 .status-timeline small { color: #75828c; font-size: 9px; }
 .history-berkas { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.history-berkas li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid #e3e9ed; border-radius: 6px; }
+.history-berkas li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #e3e9ed; border-radius: 6px; background: #fff; }
 .history-berkas strong, .history-berkas small { display: block; overflow-wrap: anywhere; }
-.history-berkas strong { color: #172033; font-size: 10px; }
+.history-berkas strong { color: #172033; font-size: 11px; }
 .history-berkas small { margin-top: 2px; color: #64727e; font-size: 9px; }
 .history-berkas .history-berkas-catatan { color: #a52e32; }
 .history-berkas .status-pill { margin: 0; }
 .history-berkas-lihat { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #cbd5da; border-radius: 5px; color: #116d38; background: #fff; cursor: pointer; }
 @media (max-width: 700px) {
   .history-detail-grid { grid-template-columns: 1fr; }
+  .history-detail.history-detail-lengkap { padding: 14px; }
+  .history-berkas li { grid-template-columns: minmax(0, 1fr) auto; }
+  .history-berkas .status-pill { grid-column: 1; grid-row: 2; justify-self: start; }
+  .history-berkas-lihat { grid-column: 2; grid-row: 1 / span 2; }
 }
 
 /* Isian tanggal (InputIsian.jsx): kalender terbuka saat kolom diklik; ikon di kanan seperti filter tanggal. */
