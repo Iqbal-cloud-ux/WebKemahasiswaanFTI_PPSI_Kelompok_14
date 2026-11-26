@@ -140,3 +140,10 @@ export const tolakKeputusanDekanRequest = (pengajuanId, catatan) => kirimJson(`/
 
 // Surat final ber-QR hanya tersedia setelah persetujuan Dekan.
 export const pdfSuratTerbitRequest = (pengajuanId) => fetch(`/api/surat/${encodeURIComponent(pengajuanId)}/pdf`, { headers: authHeader() })
+
+// Verifikasi keaslian surat dapat digunakan publik tanpa token login.
+export const verifikasiSuratRequest = (payload) => fetch('/api/verifikasi', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+})

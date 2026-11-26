@@ -60,4 +60,4 @@ Bila gagal menyematkan pengesahan, tampil pesan kesalahan dan status tidak berub
 Riwayat Keputusan [A3]: statistik dan daftar keputusan (disetujui, dikembalikan, ditolak).
 Pengaturan TTE [A3]: pilih Internal Engine FTI atau External BSrE API, isi konfigurasi, lihat status provider aktif, informasi enkripsi, dan audit log perubahan. Kunci rahasia tidak pernah ditampilkan kembali.
 Halaman publik (tanpa login)
-Verifikasi Keaslian Surat [A3]: dibuka dari pemindaian QR atau tautan di surat. Menampilkan nomor, jenis, tanggal terbit, dan status surat. Bila isi dokumen yang diperiksa berbeda dari yang tercatat (hash tidak cocok), tampil "tidak valid". Tidak boleh menampilkan data pribadi berlebih.
+Verifikasi Keaslian Surat [A3] (`/verifikasi`): pengguna menempelkan payload JSON hasil pemindaian QR; halaman mengirim nomor dan hash ke `POST /api/verifikasi` tanpa login. Menampilkan nomor, jenis, tanggal terbit, dan status hanya jika hash cocok. Bila tidak cocok atau surat tidak ditemukan, tampil "tidak dapat diverifikasi" tanpa membocorkan data pribadi. Pemeriksaan untuk surat yang ditemukan dicatat pada `public_verification`.

@@ -1,0 +1,26 @@
+.verifikasi-page { padding: 48px 0 24px; }
+.verifikasi-card { width: min(100% - 32px, 520px); padding: 24px; }
+.verifikasi-heading h1 { font-size: 22px; }
+.verifikasi-heading p { font-size: 12px; }
+.verifikasi-form { display: grid; gap: 8px; margin-top: 22px; }
+.verifikasi-form label { color: #293846; font-size: 12px; font-weight: 700; }
+.verifikasi-form textarea { width: 100%; min-height: 110px; padding: 11px; border: 1px solid #dfe7ec; border-radius: 6px; color: #263445; font: 12px/1.5 monospace; resize: vertical; }
+.verifikasi-form textarea:focus { outline: 2px solid #9bd4b0; border-color: #3c9b60; }
+.verifikasi-form > small { color: #71818c; font-size: 10px; }
+.verifikasi-form .login-button { height: 40px; margin-top: 6px; font-size: 12px; }
+.verifikasi-hasil { margin-top: 20px; padding: 16px; border: 1px solid; border-radius: 7px; }
+.verifikasi-hasil.valid { border-color: #a9edc3; color: #17623a; background: #f0fbf4; }
+.verifikasi-hasil.invalid { border-color: #f4cccc; color: #a52e32; background: #fff5f5; }
+.verifikasi-hasil h2 { margin: 7px 0 4px; font-size: 16px; }
+.verifikasi-hasil > p { margin: 0; font-size: 11px; line-height: 1.5; }
+.verifikasi-hasil dl { display: grid; gap: 9px; margin: 15px 0 0; padding-top: 12px; border-top: 1px solid #dce8df; }
+.verifikasi-hasil dl div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; font-size: 11px; }
+.verifikasi-hasil dt { color: #566a5d; }
+.verifikasi-hasil dd { margin: 0; color: #263445; overflow-wrap: anywhere; }
+.verifikasi-ulangi { margin-top: 14px; padding: 7px 10px; border: 1px solid #b8c8bf; border-radius: 5px; color: #315343; background: #fff; font-size: 10px; cursor: pointer; }
+.verifikasi-ulangi:hover { background: #f5faf7; }
+@media (max-width: 520px) {
+  .verifikasi-page { padding-top: 24px; }
+  .verifikasi-card { padding: 18px; }
+  .verifikasi-hasil dl div { grid-template-columns: 88px minmax(0, 1fr); }
+}

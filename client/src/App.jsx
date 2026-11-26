@@ -8,6 +8,7 @@ import { MahasiswaPortal } from './pages/mahasiswa/MahasiswaPortal.jsx'
 import { PimpinanPortal } from './pages/pimpinan/PimpinanPortal.jsx'
 import { PeranBelumTersediaPage } from './pages/PeranBelumTersediaPage.jsx'
 import { StafPortal } from './pages/staf/StafPortal.jsx'
+import { VerifikasiSuratPage } from './pages/verifikasi/VerifikasiSuratPage.jsx'
 import { ROLE_ROUTES, homeRouteFor, normalizeRole } from './utils/roles.js'
 
 // Kepala Kantor dan Wakil Dekan 1 memakai portal pimpinan yang sama (#89).
@@ -31,6 +32,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={halamanAwal} />
+      <Route path="/verifikasi" element={<VerifikasiSuratPage />} />
       <Route element={<PenjagaPeran user={user} peran="mahasiswa" />}>
         <Route path="/mahasiswa/*" element={<MahasiswaPortal user={user} onUpdateUser={updateUser} onLogout={logout} />} />
       </Route>
