@@ -35,6 +35,8 @@ const berkasRoutes = require('./routes/berkasRoutes');
 const notifikasiRoutes = require('./routes/notifikasiRoutes');
 const drafRoutes = require('./routes/drafRoutes');
 const parafRoutes = require('./routes/parafRoutes');
+const dekanRoutes = require('./routes/dekanRoutes');
+const suratRoutes = require('./routes/suratRoutes');
 
 // Daftarkan Routes API
 app.use('/api/auth', authRoutes);
@@ -45,6 +47,8 @@ app.use('/api/berkas', berkasRoutes);
 app.use('/api/notifikasi', notifikasiRoutes);
 app.use('/api/draf', drafRoutes);
 app.use('/api/paraf', parafRoutes);
+app.use('/api/dekan', dekanRoutes);
+app.use('/api/surat', suratRoutes);
 
 // Endpoint uji coba API
 app.get('/', (req, res) => {

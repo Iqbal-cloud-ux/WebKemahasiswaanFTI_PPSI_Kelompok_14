@@ -5,7 +5,7 @@ import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 import { tandaiSalah } from '../../utils/validasiForm.js'
 
 // Profil staf: identitas hanya baca, ubah kontak, dan ganti kata sandi (tersambung ke /api/profil).
-export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
+export function ProfilStafPage({ user, staffName, initials, onUpdateUser, roleLabel = 'Staf Akademik', unitKerja = 'Akademik - Fakultas Teknologi Informasi' }) {
   const [email, setEmail] = useState(user?.email || '')
   const [phone, setPhone] = useState(user?.no_hp || '')
   const [saving, setSaving] = useState(false)
@@ -79,11 +79,11 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
         <span className="staff-profile-avatar">{initials || 'SA'}</span>
         <div className="staff-profile-summary-main">
           <h2>{staffName}</h2>
-          <p>Staf Akademik</p>
+          <p>{roleLabel}</p>
         </div>
         <div className="staff-profile-summary-meta">
           <span>Terakhir masuk: 23 Oktober 2026, 08.00 WIB</span>
-          <small>Akun aktif · Akses staf akademik</small>
+          <small>Akun aktif · Akses {roleLabel.toLowerCase()}</small>
         </div>
       </section>
 
@@ -107,7 +107,7 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser }) {
             </label>
             <label className="staff-profile-readonly" htmlFor="staff-profile-unit">
               <span>Unit Kerja</span>
-              <span><input id="staff-profile-unit" value="Akademik - Fakultas Teknologi Informasi" readOnly /></span>
+              <span><input id="staff-profile-unit" value={unitKerja} readOnly /></span>
               <small>&nbsp;</small>
             </label>
             <button type="submit" className="staff-profile-save" disabled={saving}>Simpan Perubahan</button>

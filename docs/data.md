@@ -62,6 +62,7 @@ persetujuan: id, pengajuan_id (FK), pimpinan_id (FK ke users.id), role_pimpinan 
 surat_resmi: id, pengajuan_id (FK, unik: satu surat per pengajuan), status_draf, isi_draf, file_draf_path, penanda_tangan (migrasi 004), no_surat (unik), file_pdf_path, hash_sha256, qr_code_path, tgl_terbit, created_at, updated_at. PDF di server/uploads/letters/.
   Tabel ini menyimpan draf sekaligus surat final. Baris dibuat saat staf pertama kali menyimpan draf; no_surat, hash, QR, PDF final, dan tgl_terbit baru diisi saat Dekan menyetujui.
   penanda_tangan = JSON salinan data penanda tangan (nama, nip, pangkat_golongan, jabatan, atas_nama) saat draf terakhir disimpan. Penerbitan surat wajib memakai salinan ini, bukan data penanda_tangan terbaru, agar surat tidak berubah (dan hash tetap cocok) bila pejabat berganti.
+  hash_sha256 adalah sidik jari PDF sumber sebelum QR ditambahkan; qr_code_path menunjuk PNG dengan payload JSON `{ "nomor": "<no_surat atau no_referensi>", "hash": "<hash_sha256>" }`. Untuk TIDAK-BEASISWA, PDF final mempertahankan pindaian asli dan menambahkan halaman verifikasi di bagian akhir.
   status_draf (migrasi 002) = ENUM('dibuat', 'dikembalikan', 'diteruskan', 'terbit'), default 'dibuat'. Pengajuan diverifikasi yang belum punya baris surat_resmi berarti draf "Belum Dibuat". Pemetaan ke label ada di docs/alur-status.md.
 
 public_verification: id, surat_id (FK ke surat_resmi), scanned_at, user_agent, ip_address. Mencatat setiap pemeriksaan keaslian surat lewat halaman publik.

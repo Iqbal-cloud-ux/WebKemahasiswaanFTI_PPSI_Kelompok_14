@@ -15,7 +15,7 @@ const { bentukNomor } = require('../utils/nomorSurat');
 const { GalatAplikasi } = require('../utils/galat');
 const {
   isiVariabel, variabelTidakDikenal, bersihkanNilai, nilaiPenandaTangan, memakaiPenandaTangan, nilaiIsianSurat,
-  penandaIsiStaf, PENANDA_ISI_STAF, FORMULIR_MAHASISWA, KEPERLUAN_TETAP, validasiDataIsian,
+  penandaIsiStaf, PENANDA_ISI_STAF, FORMULIR_MAHASISWA, KEPERLUAN_TETAP, validasiDataIsian, formatTanggalIndonesia,
 } = require('../utils/templateSurat');
 const User = require('../models/userModel');
 const db = require('../config/db');
@@ -36,8 +36,8 @@ fs.mkdirSync(FOLDER_SURAT, { recursive: true });
 
 // Nilai variabel template: data mahasiswa, isian tambahan layanan (pengajuan.data_isian), penanda
 // [ISI OLEH STAF: ...] untuk variabel yang diisi staf, dan penanda tangan. Semua nilai dibersihkan.
-const nilaiPengajuan = (pengajuan, penandaTangan = null) => {
-  const { semester, tahunAkademik } = semesterAkademik();
+const nilaiPengajuan = (pengajuan, penandaTangan = null, tanggal = new Date()) => {
+  const { semester, tahunAkademik } = semesterAkademik(tanggal);
   return {
     ...penandaIsiStaf(),
     ...nilaiIsianSurat(pengajuan.layanan.kode_layanan, pengajuan.data_isian),
@@ -89,7 +89,7 @@ const daftarDraf = async () => {
 
 const ambilSurat = async (executor, pengajuanId, kunci = false) => {
   const [[row]] = await executor.query(
-    `SELECT id, status_draf, isi_draf, file_draf_path, updated_at FROM surat_resmi WHERE pengajuan_id = ?${kunci ? ' FOR UPDATE' : ''}`,
+    `SELECT id, status_draf, isi_draf, file_draf_path, penanda_tangan, updated_at FROM surat_resmi WHERE pengajuan_id = ?${kunci ? ' FOR UPDATE' : ''}`,
     [pengajuanId]
   );
   return row;
@@ -295,4 +295,63 @@ const buatFormulirMahasiswa = async (layananId, mahasiswaId, dataIsian, noHp) =>
   });
 };
 
-module.exports = { daftarDraf, ambilDraf, pratinjauDraf, simpanDraf, teruskanDraf, lokasiPdfDraf, buatFormulirMahasiswa };
+const tanggalLokalISO = (tanggal) => (
+  `${tanggal.getFullYear()}-${String(tanggal.getMonth() + 1).padStart(2, '0')}-${String(tanggal.getDate()).padStart(2, '0')}`
+);
+
+const bacaSalinanPenandaTangan = (nilai) => {
+  if (!nilai) return null;
+  const salinan = typeof nilai === 'string' ? JSON.parse(nilai) : nilai;
+  if (!salinan || typeof salinan !== 'object' || Array.isArray(salinan)) {
+    throw new Error('Salinan penanda tangan pada draf tidak valid');
+  }
+  return salinan;
+};
+
+// Membuat PDF sumber untuk penerbitan. Formulir mahasiswa tetap memakai pindaian asli;
+// surat lain dirender ulang tanpa tanda air DRAF dengan data terbit dan snapshot penanda tangan.
+const siapkanPdfPenerbitan = async ({ pengajuanId, noSurat, tanggal, executor = db }) => {
+  const pengajuan = await Pengajuan.cariDetail(pengajuanId, executor);
+  if (!pengajuan) throw new GalatAplikasi('Pengajuan tidak ditemukan', 404);
+  const template = await Layanan.ambilTemplate(pengajuan.layanan.id, executor);
+  if (!template) throw new GalatAplikasi(`Layanan ${pengajuan.layanan.nama_layanan} belum punya template surat`, 409);
+
+  const surat = await ambilSurat(executor, pengajuanId);
+  if (!surat?.isi_draf || !surat.file_draf_path || surat.status_draf !== 'diteruskan') {
+    throw new GalatAplikasi('Draf surat belum diteruskan sampai ke Dekan', 409);
+  }
+
+  const syaratFormulir = formulirMahasiswa(pengajuan);
+  if (syaratFormulir) {
+    return { pdfSumber: await ambilPindaian(pengajuanId, syaratFormulir, executor), formulir: true };
+  }
+
+  const penandaTangan = bacaSalinanPenandaTangan(surat.penanda_tangan);
+  if (!penandaTangan && memakaiPenandaTangan(template.body_template, template.footer_surat)) {
+    throw new GalatAplikasi('Salinan penanda tangan tidak ditemukan pada draf surat', 409);
+  }
+  const nilai = {
+    ...nilaiPengajuan(pengajuan, penandaTangan, tanggal),
+    no_surat: noSurat || '-',
+    tanggal: formatTanggalIndonesia(tanggalLokalISO(tanggal)),
+  };
+  const isi = isiVariabel(surat.isi_draf, nilai);
+  const footer = isiVariabel(template.footer_surat, nilai);
+  const opsiPdf = {
+    header: template.header_surat,
+    isi,
+    footer,
+    foto: await ambilFoto(pengajuanId, template, executor),
+    judul: `Surat ${pengajuan.layanan.nama_layanan} ${pengajuan.no_referensi}`,
+  };
+  return {
+    pdfSumber: await buatPdfSurat(opsiPdf),
+    formulir: false,
+    buatPdfDenganQr: (qr) => buatPdfSurat({ ...opsiPdf, qr }),
+  };
+};
+
+module.exports = {
+  daftarDraf, ambilDraf, pratinjauDraf, simpanDraf, teruskanDraf, lokasiPdfDraf,
+  buatFormulirMahasiswa, siapkanPdfPenerbitan,
+};

@@ -71,8 +71,9 @@ layanan nomor 7 yang berstatus Selesai) atau hanya mengandalkan bukti yang diung
   formulir pengajuan, mencetak, menempel meterai Rp10.000, menandatangani, memindai, lalu mengunggahnya.
 - Dokumen yang diunggah: surat pernyataan bermeterai yang sudah ditandatangani (hasil pindai), **wajib PDF**.
   Staf memeriksa isi dan kejelasan pindaian; bila belum sesuai, minta perbaikan. Setelah itu alur berlanjut
-  sampai persetujuan Dekan; hasil akhirnya pindaian itu yang ditempeli kode QR dan keterangan persetujuan
-  elektronik (#95, butuh library pdf-lib).
+  sampai persetujuan Dekan; PDF hasil akhir mempertahankan pindaian asli dan menambahkan satu halaman
+  verifikasi di bagian akhir yang memuat QR, nomor referensi, sidik jari SHA-256, dan keterangan persetujuan
+  elektronik (#95, memakai library pdf-lib).
 - Keperluan tetap "Persyaratan pengajuan beasiswa"; nama beasiswa diisi mahasiswa.
 - Keputusan 26 November 2026: setelah staf memverifikasi pindaian, alurnya seperti biasa (draf, paraf Kepala
   Kantor dan Wakil Dekan I, keputusan Dekan). PDF draf yang dilihat staf dan pimpinan adalah pindaian unggahan

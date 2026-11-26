@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AlertCircle, Check, Download, Eye, Wrench } from 'lucide-react'
 import { PratinjauBerkas } from '../../components/PratinjauBerkas.jsx'
-import { bacaHasil, detailPengajuanRequest } from '../../services/api.js'
+import { bacaHasil, detailPengajuanRequest, pdfSuratTerbitRequest } from '../../services/api.js'
 import { formatWaktu, statusMahasiswa } from '../../utils/statusPengajuan.js'
 import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 
@@ -18,6 +18,8 @@ export function DetailPengajuan({ submission, onPerbaiki }) {
   const [detail, setDetail] = useState({ status: 'memuat', data: null, pesan: '' })
   const [pratinjau, setPratinjau] = useState(null)
   const [notice, setNotice] = useState('')
+  const [galatUnduh, setGalatUnduh] = useState('')
+  const [mengunduh, setMengunduh] = useState(false)
   usePesanOtomatis(notice, () => setNotice(''))
   const tutupPratinjau = useCallback(() => setPratinjau(null), [])
 
@@ -30,6 +32,33 @@ export function DetailPengajuan({ submission, onPerbaiki }) {
     return () => { aktif = false }
   }, [submission.pengajuanId, submission.statusKode])
 
+  const unduhSurat = async () => {
+    setMengunduh(true)
+    setGalatUnduh('')
+    setNotice('')
+    try {
+      const response = await pdfSuratTerbitRequest(submission.pengajuanId)
+      if (!response.ok) {
+        const hasil = await response.json().catch(() => null)
+        throw new Error(hasil?.message || 'Surat gagal diunduh. Coba lagi beberapa saat lagi.')
+      }
+
+      const url = URL.createObjectURL(await response.blob())
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Surat-${submission.id}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      setNotice('Surat resmi berhasil diunduh. Kode QR verifikasi tercantum di dalam PDF.')
+    } catch (galat) {
+      setGalatUnduh(galat.message)
+    } finally {
+      setMengunduh(false)
+    }
+  }
+
   const data = detail.data
   return (
     <article className="history-detail history-detail-lengkap" aria-live="polite">
@@ -37,10 +66,11 @@ export function DetailPengajuan({ submission, onPerbaiki }) {
         <div><small>{submission.id} · {submission.status}</small><h3>{submission.title}</h3><p>Diajukan {submission.date} · Keperluan: {submission.keperluan}</p></div>
         <div className="history-detail-actions">
           {submission.statusKode === 'perlu_perbaikan' && <button type="button" className="small-button" onClick={() => onPerbaiki(submission.pengajuanId)}><Wrench size={14} /> Perbaiki Berkas</button>}
-          {submission.statusKode === 'disetujui' && <button type="button" className="small-button" onClick={() => setNotice('Unduh surat belum tersedia. Fitur ini akan aktif setelah penerbitan surat selesai dibuat.')}><Download size={14} /> Unduh Surat</button>}
+          {submission.statusKode === 'disetujui' && <button type="button" className="small-button" disabled={mengunduh} onClick={unduhSurat}><Download size={14} /> {mengunduh ? 'Mengunduh...' : 'Unduh Surat'}</button>}
         </div>
       </header>
-      {notice && <p className="history-detail-notice">{notice}</p>}
+      {notice && <p className="history-detail-notice" role="status">{notice}</p>}
+      {galatUnduh && <div className="flow-error" role="alert"><AlertCircle size={15} />{galatUnduh}</div>}
       {submission.catatan && <div className="history-detail-catatan"><AlertCircle size={15} /><div><strong>{submission.statusKode === 'ditolak' ? 'Alasan penolakan' : 'Catatan Staf Akademik'}</strong><p>{submission.catatan}</p></div></div>}
 
       {detail.status === 'memuat' && <p className="muted-copy" role="status">Memuat detail...</p>}

@@ -3,14 +3,13 @@ import { PenjagaPeran } from './components/PenjagaPeran.jsx'
 import { useSession } from './hooks/useSession.js'
 import { LoginPage } from './pages/auth/LoginPage.jsx'
 import { TidakDitemukanPage } from './pages/galat/TidakDitemukanPage.jsx'
+import { DekanPortal } from './pages/dekan/DekanPortal.jsx'
 import { MahasiswaPortal } from './pages/mahasiswa/MahasiswaPortal.jsx'
 import { PimpinanPortal } from './pages/pimpinan/PimpinanPortal.jsx'
 import { PeranBelumTersediaPage } from './pages/PeranBelumTersediaPage.jsx'
 import { StafPortal } from './pages/staf/StafPortal.jsx'
-import { ROLE_LABELS, ROLE_ROUTES, homeRouteFor, normalizeRole } from './utils/roles.js'
+import { ROLE_ROUTES, homeRouteFor, normalizeRole } from './utils/roles.js'
 
-// Peran yang halamannya belum dibuat; ganti dengan portal masing-masing setelah tersedia.
-const PERAN_BELUM_TERSEDIA = ['dekan']
 // Kepala Kantor dan Wakil Dekan 1 memakai portal pimpinan yang sama (#89).
 const PERAN_PIMPINAN = ['kepala-kantor', 'wakil-dekan']
 
@@ -43,11 +42,9 @@ function App() {
           <Route path={`${ROLE_ROUTES[peran]}/*`} element={<PimpinanPortal user={user} onUpdateUser={updateUser} onLogout={logout} />} />
         </Route>
       ))}
-      {PERAN_BELUM_TERSEDIA.map((peran) => (
-        <Route key={peran} element={<PenjagaPeran user={user} peran={peran} />}>
-          <Route path={`${ROLE_ROUTES[peran]}/*`} element={<PeranBelumTersediaPage user={user} roleLabel={ROLE_LABELS[peran]} onLogout={logout} />} />
-        </Route>
-      ))}
+      <Route element={<PenjagaPeran user={user} peran="dekan" />}>
+        <Route path={`${ROLE_ROUTES.dekan}/*`} element={<DekanPortal user={user} onUpdateUser={updateUser} onLogout={logout} />} />
+      </Route>
       {/* Alamat tidak dikenal: belum login -> Login (docs/alur-layar.md), sudah login -> 404. */}
       <Route path="*" element={user ? <TidakDitemukanPage beranda={home} /> : <Navigate to="/" replace />} />
     </Routes>

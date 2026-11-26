@@ -124,3 +124,19 @@ export const setujuiParafRequest = (pengajuanId, catatan) => kirimJson(`/api/par
 export const kembalikanParafRequest = (pengajuanId, catatan) => kirimJson(`/api/paraf/${encodeURIComponent(pengajuanId)}/kembalikan`, 'POST', { catatan })
 
 export const detailPengajuanRequest = (id) => fetch(`/api/pengajuan/${encodeURIComponent(id)}`, { headers: authHeader() })
+
+// Dekan: antrean keputusan akhir, riwayat, dan tindakan penerbitan surat.
+export const antreanDekanRequest = () => fetch('/api/dekan/antrean', { headers: authHeader() })
+
+export const riwayatDekanRequest = () => fetch('/api/dekan/riwayat', { headers: authHeader() })
+
+export const detailDekanRequest = (pengajuanId) => fetch(`/api/dekan/${encodeURIComponent(pengajuanId)}`, { headers: authHeader() })
+
+export const setujuiKeputusanDekanRequest = (pengajuanId, catatan) => kirimJson(`/api/dekan/${encodeURIComponent(pengajuanId)}/setujui`, 'POST', { catatan })
+
+export const kembalikanKeputusanDekanRequest = (pengajuanId, catatan) => kirimJson(`/api/dekan/${encodeURIComponent(pengajuanId)}/kembalikan`, 'POST', { catatan })
+
+export const tolakKeputusanDekanRequest = (pengajuanId, catatan) => kirimJson(`/api/dekan/${encodeURIComponent(pengajuanId)}/tolak`, 'POST', { catatan })
+
+// Surat final ber-QR hanya tersedia setelah persetujuan Dekan.
+export const pdfSuratTerbitRequest = (pengajuanId) => fetch(`/api/surat/${encodeURIComponent(pengajuanId)}/pdf`, { headers: authHeader() })
