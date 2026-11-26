@@ -222,7 +222,7 @@
 .staff-archive-panel-heading { margin-bottom: 10px; }
 .staff-archive-panel-heading h2 { margin: 0; color: #172033; font-size: 12px; }
 .staff-archive-panel-heading p { margin: 6px 0 0; color: #64727e; font-size: 9px; line-height: 1.5; }
-.staff-archive-table { min-width: 800px; }
+.staff-archive-table { min-width: 960px; }
 .staff-archive-table th { height: 34px; }
 .staff-archive-table th span { margin-left: 3px; color: #526170; font-size: 11px; }
 .staff-archive-table td { height: 55px; }
@@ -238,6 +238,7 @@
 .staff-archive-view:hover { color: #126d3a; }
 .staff-archive-download { width: 76px; min-height: 29px; border: 1px solid #16763f; border-radius: 4px; color: #126d3a; background: #fff; font-size: 9px; }
 .staff-archive-download:hover { color: #fff; background: #16763f; }
+.staff-archive-download:disabled, .staff-archive-preview button:disabled { opacity: .6; cursor: wait; }
 .staff-archive-pagination { margin: 10px 0 12px; }
 .staff-pagination-gap { min-width: 22px; height: 25px; display: grid; place-items: center; color: #71818c; font-size: 10px; }
 .staff-archive-footnote { display: flex; align-items: center; gap: 6px; margin: 0; color: #71818c; font-size: 8px; line-height: 1.5; }
@@ -247,17 +248,18 @@
 .staff-archive-preview > header span { color: #16763f; font-size: 8px; font-weight: 700; letter-spacing: .8px; }
 .staff-archive-preview > header h2 { margin: 5px 0 0; color: #172033; font-size: 18px; }
 .staff-archive-preview > header button { display: grid; place-items: center; padding: 5px; border: 0; border-radius: 5px; color: #64727e; background: transparent; cursor: pointer; }
-.staff-archive-paper { position: relative; min-height: 300px; padding: 30px 28px; border: 1px solid #dfe7ec; color: #344252; background: #fff; box-shadow: 0 3px 12px rgb(15 23 42 / 5%); font-size: 10px; line-height: 1.7; }
-.staff-archive-demo-stamp { position: absolute; top: 25px; right: 22px; padding: 3px 7px; border: 1px solid #d68a27; border-radius: 3px; color: #a86013 !important; font-size: 8px !important; font-weight: 700; letter-spacing: .5px; transform: rotate(7deg); }
-.staff-archive-paper-brand { color: #172033; text-align: center; font-size: 9px; line-height: 1.6; }
-.staff-archive-paper-rule { height: 2px; margin: 14px 0 22px; border-top: 1px solid #344252; border-bottom: 1px solid #344252; }
-.staff-archive-paper h3 { margin: 0 0 12px; color: #172033; font-size: 13px; text-align: center; text-decoration: underline; }
-.staff-archive-paper p { margin: 9px 0; }
-.staff-archive-verification { display: flex; align-items: center; gap: 7px; margin-top: 24px; padding: 8px; border: 1px dashed #dfe7ec; color: #71818c; font-size: 8px; }
-.staff-archive-verification svg { flex: 0 0 auto; }
+.staff-archive-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.staff-archive-details > div { min-width: 0; padding: 10px; border: 1px solid #e3eaed; border-radius: 6px; }
+.staff-archive-details dt { margin-bottom: 5px; color: #64727e; font-size: 9px; font-weight: 600; }
+.staff-archive-details dd { margin: 0; color: #172033; font-size: 10px; overflow-wrap: anywhere; }
+.staff-archive-details .staff-archive-hash { font-family: monospace; font-size: 9px; }
+.staff-archive-qr { min-height: 150px; display: grid; place-items: center; margin-top: 12px; padding: 10px; border: 1px dashed #dfe7ec; border-radius: 6px; color: #64727e; font-size: 10px; text-align: center; }
+.staff-archive-qr img { width: 144px; height: 144px; object-fit: contain; }
+.staff-archive-qr p { margin: 0; }
 .staff-archive-preview > footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .staff-archive-preview > footer button { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid #dfe7ec; border-radius: 5px; font-size: 9px; font-weight: 600; cursor: pointer; }
 .staff-archive-preview > footer .staff-editor-cancel { color: #526170; background: #fff; }
+.staff-archive-preview > footer .staff-archive-view { border: 1px solid #dfe7ec; border-radius: 5px; font-size: 9px; }
 .staff-archive-preview > footer .staff-editor-save { border-color: #16763f; color: #fff; background: #16763f; }
 @media (max-width: 900px) {
   .staff-archive-filters { grid-template-columns: minmax(200px, 1fr) repeat(2, minmax(145px, 1fr)); }
@@ -273,7 +275,8 @@
   .staff-archive-panel { padding: 11px; }
   .staff-archive-pagination { align-items: flex-start; flex-direction: column; }
   .staff-archive-preview { max-height: calc(100vh - 20px); padding: 15px; }
-  .staff-archive-paper { min-height: 260px; padding: 25px 17px; }
+  .staff-archive-details { grid-template-columns: 1fr; gap: 8px; }
+  .staff-archive-preview > footer { flex-wrap: wrap; }
 }
 .staff-service-config-heading { margin: 16px 0 12px; }
 .staff-service-config-heading h1 { margin: 10px 0 5px; color: #172033; font-size: 25px; letter-spacing: -.4px; }
@@ -362,6 +365,9 @@
 .staff-reports-heading p { margin: 0; color: #64727e; font-size: 10px; line-height: 1.6; }
 .staff-report-notice { margin: 0 0 12px; }
 .staff-report-notice button { display: grid; place-items: center; padding: 2px; border: 0; color: inherit; background: transparent; cursor: pointer; }
+.staff-report-state { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 100px; padding: 20px; color: #526170; font-size: 12px; }
+.staff-report-state-error { color: #a52e32; }
+.staff-report-state button { min-height: 32px; padding: 0 12px; border: 1px solid #126d3a; border-radius: 4px; color: #126d3a; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
 .staff-report-filters { display: grid; grid-template-columns: minmax(190px, 1.45fr) minmax(145px, 1.2fr) minmax(130px, 1.15fr) minmax(110px, .9fr) 72px; align-items: stretch; gap: 10px; margin-bottom: 13px; }
 .staff-report-filter-card { min-width: 0; display: grid; align-content: start; gap: 7px; padding: 9px 10px; border: 1px solid #e3eaed; border-radius: 6px; color: #344252; background: #fff; font-size: 8px; font-weight: 600; }
 .staff-report-filter-card select { width: 100%; min-width: 0; height: 28px; padding: 0 7px; border: 1px solid #dfe7ec; border-radius: 4px; outline: 0; color: #64727e; background: #fff; font: inherit; font-size: 8px; }
@@ -373,6 +379,7 @@
 .staff-report-date-range svg { flex: 0 0 auto; }
 .staff-report-export { min-width: 72px; height: 38px; align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; border: 1px solid #126d3a; border-radius: 4px; color: #fff; background: #126d3a; font-size: 8px; font-weight: 600; cursor: pointer; }
 .staff-report-export:hover { background: #0c5d2f; }
+.staff-report-export:disabled { opacity: .6; cursor: not-allowed; }
 .staff-report-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 13px; }
 .staff-report-stat { min-width: 0; min-height: 108px; display: grid; grid-template-columns: minmax(0, 1fr) 16px; align-content: start; gap: 6px 8px; padding: 12px; border: 1px solid #dfe7ec; border-radius: 6px; background: #fff; }
 .staff-report-stat > span { overflow: hidden; color: #344252; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
@@ -450,6 +457,21 @@
   .staff-report-distribution { grid-template-columns: 1fr; }
   .staff-report-distribution h2 { grid-column: auto; }
   .staff-report-status-legend { max-width: 230px; }
+}
+@media print {
+  .staff-report-print-page .staff-sidebar,
+  .staff-report-print-page .staff-sidebar-overlay,
+  .staff-report-print-page .staff-topbar,
+  .staff-report-print-page .staff-dashboard-footer,
+  .staff-report-print-page .staff-report-filters,
+  .staff-report-print-page .staff-report-notice { display: none !important; }
+  .staff-report-print-page .staff-workspace { margin-left: 0 !important; }
+  .staff-report-print-page .staff-dashboard-content { width: 100%; padding: 0 !important; }
+  .staff-report-print-page { background: #fff; }
+  .staff-report-print-page .staff-report-panel,
+  .staff-report-print-page .staff-report-stat { break-inside: avoid; box-shadow: none; }
+  .staff-report-print-page .staff-report-breakdown .staff-table-wrap { overflow: visible; }
+  .staff-report-print-page .staff-report-table { min-width: 0; }
 }
 .staff-review-heading h1 { margin: 10px 0 9px; color: #172033; font-size: 25px; letter-spacing: -.4px; }
 .staff-review-meta { display: flex; align-items: center; gap: 8px; min-height: 25px; color: #71818c; font-size: 9px; }

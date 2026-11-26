@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { AlertCircle, Check, ChevronLeft, Clock3, Eye, FileText, PenLine, Undo2, X } from 'lucide-react'
 import { PratinjauBerkas } from '../../components/PratinjauBerkas.jsx'
-import { bacaHasil, detailDekanRequest, kembalikanKeputusanDekanRequest, pdfDrafRequest, pdfSuratTerbitRequest, setujuiKeputusanDekanRequest, tolakKeputusanDekanRequest } from '../../services/api.js'
+import { bacaHasil, detailDekanRequest, kembalikanKeputusanDekanRequest, pdfDrafRequest, pratinjauSuratTerbitRequest, setujuiKeputusanDekanRequest, tolakKeputusanDekanRequest } from '../../services/api.js'
 import { formatTanggal, formatWaktu, statusStaf } from '../../utils/statusPengajuan.js'
 import { teksSemester } from '../../utils/semester.js'
 import { tandaiSalah } from '../../utils/validasiForm.js'
@@ -36,7 +36,7 @@ export function DetailKeputusanPage({ onKembali }) {
   }, [id])
 
   const suratTerbit = detail.data?.pengajuan.status === 'disetujui'
-  const muatPdf = useCallback(() => suratTerbit ? pdfSuratTerbitRequest(id) : pdfDrafRequest(id), [id, suratTerbit])
+  const muatPdf = useCallback(() => suratTerbit ? pratinjauSuratTerbitRequest(id) : pdfDrafRequest(id), [id, suratTerbit])
   const heading = (
     <div className="staff-review-heading">
       <div className="staff-breadcrumb">Layanan Kemahasiswaan FTI <span>/</span> Tinjau Surat</div>

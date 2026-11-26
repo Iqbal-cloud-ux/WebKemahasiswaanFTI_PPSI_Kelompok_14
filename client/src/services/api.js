@@ -141,6 +141,27 @@ export const tolakKeputusanDekanRequest = (pengajuanId, catatan) => kirimJson(`/
 // Surat final ber-QR hanya tersedia setelah persetujuan Dekan.
 export const pdfSuratTerbitRequest = (pengajuanId) => fetch(`/api/surat/${encodeURIComponent(pengajuanId)}/pdf`, { headers: authHeader() })
 
+export const pratinjauSuratTerbitRequest = (pengajuanId) => fetch(`/api/surat/${encodeURIComponent(pengajuanId)}/pdf?mode=pratinjau`, { headers: authHeader() })
+
+// Staf: daftar arsip surat terbit dan kode QR privat untuk detail arsip.
+export const daftarArsipSuratRequest = () => fetch('/api/surat/arsip', { headers: authHeader() })
+
+export const qrSuratTerbitRequest = (pengajuanId) => fetch(`/api/surat/arsip/${encodeURIComponent(pengajuanId)}/qr`, { headers: authHeader() })
+
+// Staf: laporan agregat dan ekspor CSV kompatibel Excel.
+const parameterRekap = ({ mulai, sampai, jenisLayananId, status } = {}) => {
+  const params = new URLSearchParams()
+  if (mulai) params.set('mulai', mulai)
+  if (sampai) params.set('sampai', sampai)
+  if (jenisLayananId) params.set('jenis_layanan_id', jenisLayananId)
+  if (status) params.set('status', status)
+  return params.toString()
+}
+
+export const rekapRequest = (filter) => fetch(`/api/rekap?${parameterRekap(filter)}`, { headers: authHeader() })
+
+export const eksporRekapCsvRequest = (filter) => fetch(`/api/rekap/ekspor?format=csv&${parameterRekap(filter)}`, { headers: authHeader() })
+
 // Verifikasi keaslian surat dapat digunakan publik tanpa token login.
 export const verifikasiSuratRequest = (payload) => fetch('/api/verifikasi', {
   method: 'POST',

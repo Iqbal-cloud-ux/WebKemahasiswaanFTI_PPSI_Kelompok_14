@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { unduhSuratTerbit } = require('../controllers/suratController');
+const { daftarArsip, unduhQrSurat, unduhSuratTerbit } = require('../controllers/suratController');
 const { verifyToken, checkRole } = require('../middlewares/authMiddleware');
+
+router.get('/arsip', verifyToken, checkRole('staf'), daftarArsip);
+router.get('/arsip/:pengajuanId/qr', verifyToken, checkRole('staf'), unduhQrSurat);
 
 router.get(
   '/:pengajuanId/pdf',

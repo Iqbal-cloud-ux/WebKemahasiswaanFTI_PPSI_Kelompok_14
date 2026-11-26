@@ -81,7 +81,11 @@
 .document-upload strong, .document-upload small { display: block; }
 .document-upload strong { font-size: 10px; }
 .document-upload small { margin-top: 4px; color: #64727e; font-size: 9px; }
-.upload-button { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; margin: 0 !important; padding: 8px 10px; border: 1px solid #116d38; border-radius: 4px; color: #116d38; background: #fff; font-size: 9px; cursor: pointer; }
+.upload-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-shrink: 0; }
+.upload-button, .upload-remove-button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex-shrink: 0; margin: 0 !important; padding: 8px 10px; border: 1px solid #116d38; border-radius: 4px; color: #116d38; background: #fff; font-size: 9px; cursor: pointer; }
+.upload-remove-button { border-color: #e4b7b7; color: #a52e32; }
+.upload-remove-button:hover { border-color: #a52e32; background: #fff7f7; }
+.upload-remove-button:disabled { opacity: .6; cursor: wait; }
 .upload-button input { display: none; }
 .review-card { max-width: 760px; margin: auto; }
 .review-row { display: flex; justify-content: space-between; gap: 20px; padding: 12px 0; border-bottom: 1px solid #edf0f2; font-size: 10px; }

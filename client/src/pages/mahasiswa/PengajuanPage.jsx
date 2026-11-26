@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, Upload } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, Trash2, Upload } from 'lucide-react'
 import { bacaHasil, kirimPengajuanRequest, unduhFormulirRequest } from '../../services/api.js'
 import { acceptUntuk, periksaBerkas, teksTipe, ukuranTampil } from '../../utils/berkas.js'
 import { StatusMuat } from './BerandaMahasiswaPage.jsx'
@@ -45,6 +45,20 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
     const problem = periksaBerkas(file, item.tipe_file)
     setFileErrors((current) => ({ ...current, [item.id]: problem }))
     if (!problem) setFiles((current) => ({ ...current, [item.id]: file }))
+  }
+
+  const removeFile = (syaratId) => {
+    setFiles((current) => {
+      const next = { ...current }
+      delete next[syaratId]
+      return next
+    })
+    setFileErrors((current) => {
+      const next = { ...current }
+      delete next[syaratId]
+      return next
+    })
+    setError('')
   }
 
   const chooseService = (item) => {
@@ -225,7 +239,10 @@ export function PengajuanPage({ user, layanan, initialLayananId = null, onCancel
                     ? <small className="document-upload-error">{fileErrors[item.id]}</small>
                     : <small>{files[item.id] ? `${files[item.id].name} · ${ukuranTampil(files[item.id].size)}` : 'Belum diunggah'}</small>}
                 </div>
-                <label className="upload-button"><Upload size={14} /> {files[item.id] ? 'Ganti berkas' : 'Pilih berkas'}<input type="file" accept={acceptUntuk(item.tipe_file)} onChange={(event) => { chooseFile(item, event.target.files[0]); event.target.value = '' }} /></label>
+                <div className="upload-actions">
+                  <label className="upload-button"><Upload size={14} /> {files[item.id] ? 'Ganti berkas' : 'Pilih berkas'}<input type="file" accept={acceptUntuk(item.tipe_file)} onChange={(event) => { chooseFile(item, event.target.files[0]); event.target.value = '' }} /></label>
+                  {files[item.id] && <button type="button" className="upload-remove-button" disabled={sending} onClick={() => removeFile(item.id)} aria-label={`Hapus ${item.nama_syarat}`} title="Hapus berkas yang dipilih"><Trash2 size={14} /> Hapus</button>}
+                </div>
               </div>
             ))}
           </div>
