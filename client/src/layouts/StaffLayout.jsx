@@ -10,7 +10,7 @@ const NAVIGATION = [
   { label: 'Jenis Layanan & Template', icon: FilePlus2 },
 ]
 
-export function StaffLayout({ staffName, initials, activePage, sidebarOpen, setSidebarOpen, onOpenPage, onLogout, children }) {
+export function StaffLayout({ staffName, initials, photoUrl, activePage, sidebarOpen, setSidebarOpen, onOpenPage, onLogout, children }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
 
@@ -49,9 +49,11 @@ export function StaffLayout({ staffName, initials, activePage, sidebarOpen, setS
             </div>
             <div className="staff-popover-anchor">
               <button type="button" className="staff-profile-button" onClick={() => { setProfileOpen((open) => !open); setNotificationsOpen(false) }} aria-expanded={profileOpen}>
-                <span className="staff-avatar">{initials || 'SA'}</span><ChevronDown size={14} />
+                {photoUrl
+                  ? <img className="staff-avatar" src={photoUrl} alt="" />
+                  : <span className="staff-avatar">{initials || 'SA'}</span>}<ChevronDown size={14} />
               </button>
-              {profileOpen && <div className="staff-popover staff-profile-popover"><strong>{staffName}</strong><span>Staf Akademik</span><button type="button" onClick={() => { setProfileOpen(false); onOpenPage('Profil') }}><UserRound size={14} /> Lihat Profil</button><button type="button" className="staff-profile-logout" onClick={onLogout}><LogOut size={14} /> Keluar</button></div>}
+              {profileOpen && <div className="staff-popover staff-profile-popover"><strong>{staffName}</strong><span>Staf Akademik</span><button type="button" aria-label="Lihat profil" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setProfileOpen(false); onOpenPage('Profil') }}><UserRound size={14} /> Lihat Profil</button><button type="button" className="staff-profile-logout" onClick={onLogout}><LogOut size={14} /> Keluar</button></div>}
             </div>
           </div>
         </header>

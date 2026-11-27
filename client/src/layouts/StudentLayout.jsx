@@ -54,12 +54,14 @@ export function StudentLayout({ user, activeView, unreadCount, sidebarOpen, setS
             </button>
             <div className="staff-popover-anchor">
               <button type="button" className="staff-profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen} aria-label="Menu akun">
-                <span className="staff-avatar">{initials || 'M'}</span><ChevronDown size={14} />
+                {user.foto_profil
+                  ? <img className="staff-avatar" src={user.foto_profil} alt="" />
+                  : <span className="staff-avatar">{initials || 'M'}</span>}<ChevronDown size={14} />
               </button>
               {profileOpen && (
                 <div className="staff-popover staff-profile-popover">
                   <strong>{name}</strong><span>Mahasiswa</span>
-                  <button type="button" onClick={() => navigate('profile')}><UserRound size={14} /> Lihat Profil</button>
+                  <button type="button" aria-label="Lihat profil" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate('profile') }}><UserRound size={14} /> Lihat Profil</button>
                   <button type="button" className="staff-profile-logout" onClick={onLogout}><LogOut size={14} /> Keluar</button>
                 </div>
               )}

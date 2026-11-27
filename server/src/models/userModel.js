@@ -31,6 +31,10 @@ const User = {
     await db.query('UPDATE users SET email = ?, no_hp = ? WHERE id = ?', [email, noHp, id]);
   },
 
+  ubahFotoProfil: async (id, fotoProfil) => {
+    await db.query('UPDATE users SET foto_profil = ? WHERE id = ?', [fotoProfil, id]);
+  },
+
   // passwordHash harus sudah di-hash bcrypt; jangan pernah menyimpan kata sandi teks biasa.
   ubahPassword: async (id, passwordHash) => {
     await db.query('UPDATE users SET password = ? WHERE id = ?', [passwordHash, id]);

@@ -86,6 +86,7 @@ export function StafPortal({ user, onUpdateUser, onLogout }) {
     <StaffLayout
       staffName={staffName}
       initials={initials}
+      photoUrl={user.foto_profil}
       activePage={activePage}
       sidebarOpen={sidebarOpen}
       setSidebarOpen={setSidebarOpen}

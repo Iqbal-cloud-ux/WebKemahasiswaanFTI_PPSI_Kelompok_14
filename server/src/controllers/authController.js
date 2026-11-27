@@ -28,6 +28,7 @@ const createUserData = (user) => ({
   jenjang: user.jenjang ?? null,
   angkatan: user.angkatan ?? null,
   no_hp: user.no_hp,
+  foto_profil: user.foto_profil ?? null,
   token: buatToken(user)
 });
 
@@ -103,7 +104,7 @@ const logout = async (req, res) => {
 const loginUjiAktif = process.env.NODE_ENV !== 'production' && process.env.LOGIN_UJI === 'aktif';
 const AKUN_UJI = {
   mahasiswa: 'mahasiswa1@contoh.test',
-  staf: 'staf@contoh.test',
+  staf: 'staf-pintasan@contoh.test',
   kakor: 'kakor@contoh.test',
   wadek1: 'wadek1@contoh.test',
   dekan: 'dekan@contoh.test',

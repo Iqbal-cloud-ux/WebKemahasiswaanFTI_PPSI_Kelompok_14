@@ -29,6 +29,7 @@ const dataProfil = (user) => ({
   jenjang: user.jenjang ?? null,
   angkatan: user.angkatan ?? null,
   no_hp: user.no_hp,
+  foto_profil: user.foto_profil ?? null,
 });
 
 // GET /api/profil
@@ -92,4 +93,43 @@ const ubahKataSandi = async (req, res) => {
   }
 };
 
-module.exports = { lihatProfil, ubahKontak, ubahKataSandi };
+// PUT /api/profil/foto  { foto_profil: "data:image/png;base64,..."}
+const UKURAN_FOTO_MAKS = 2 * 1024 * 1024;
+
+const ubahFotoProfil = async (req, res) => {
+  try {
+    const foto = typeof req.body.foto_profil === 'string' ? req.body.foto_profil : '';
+    const cocok = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/.exec(foto);
+    if (!cocok) return sendError(res, 'Foto profil harus berupa JPG atau PNG', 400);
+
+    let buffer;
+    try {
+      buffer = Buffer.from(cocok[2], 'base64');
+    } catch {
+      return sendError(res, 'Foto profil tidak valid', 400);
+    }
+    if (buffer.length > UKURAN_FOTO_MAKS) return sendError(res, 'Ukuran foto profil maksimal 2 MB', 400);
+
+    const png = buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    const jpg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    if (!png && !jpg) return sendError(res, 'Isi foto profil harus berupa JPG atau PNG', 400);
+
+    await User.ubahFotoProfil(req.user.id, foto);
+    await catatAktivitas({ userId: req.user.id, action: 'ubah_foto_profil', description: 'Mengubah foto profil', ipAddress: req.ip });
+    return sendSuccess(res, 'Foto profil berhasil diperbarui', dataProfil(await User.findById(req.user.id)));
+  } catch (error) {
+    return tanganiGalat(res, error, 'Ubah Foto Profil');
+  }
+};
+
+const hapusFotoProfil = async (req, res) => {
+  try {
+    await User.ubahFotoProfil(req.user.id, null);
+    await catatAktivitas({ userId: req.user.id, action: 'hapus_foto_profil', description: 'Menghapus foto profil', ipAddress: req.ip });
+    return sendSuccess(res, 'Foto profil berhasil dihapus', dataProfil(await User.findById(req.user.id)));
+  } catch (error) {
+    return tanganiGalat(res, error, 'Hapus Foto Profil');
+  }
+};
+
+module.exports = { lihatProfil, ubahKontak, ubahKataSandi, ubahFotoProfil, hapusFotoProfil };

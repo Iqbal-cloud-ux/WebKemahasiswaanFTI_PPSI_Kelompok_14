@@ -225,6 +225,14 @@
 .profile-feedback.info { border-color: #cfe0ff; color: #2860c4; background: #f1f6ff; }
 .profile-feedback.error { border-color: #f4cccc; color: #a52e32; background: #fff0f0; }
 .profile-feedback.success { border-color: #9bd5b2; color: #126d3a; background: #f5fff8; }
+ .profile-photo-card { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding: 14px; border: 1px solid #dfe7ec; border-radius: 7px; background: #fff; }
+ .profile-photo-card > img, .profile-photo-card > span { width: 64px; height: 64px; flex: 0 0 64px; display: grid; place-items: center; border-radius: 50%; object-fit: cover; color: #126d3a; background: #dcf8e6; font-size: 16px; font-weight: 800; }
+ .profile-photo-card strong { color: #172033; font-size: 12px; }
+ .profile-photo-card p { margin: 4px 0 8px; color: #64727e; font-size: 9px; }
+ .profile-photo-actions { display: flex; align-items: center; gap: 8px; }
+ .profile-photo-actions label, .profile-photo-actions button { height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid #116d38; border-radius: 5px; color: #116d38; background: #fff; font-size: 9px; cursor: pointer; }
+ .profile-photo-actions label input { display: none; }
+ .profile-photo-actions button { border-color: #e4b7b7; color: #a52e32; }
 .profile-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 24px; }
 .profile-section { min-width: 0; }
 .profile-section h2 { margin: 0 0 14px; color: #172033; font-size: 15px; }
@@ -250,6 +258,13 @@
 .password-strength > div span { height: 4px; border-radius: 3px; background: #dfe7ec; }
 .password-strength > div span.passed { background: #168043; }
 .password-strength p { margin: 7px 0 0; color: #75828c; font-size: 9px; }
+.password-requirements { margin: 0 0 12px; padding: 10px; border: 1px solid #dfe7ec; border-radius: 5px; background: #f8fafb; }
+.password-requirements > strong { color: #344252; font-size: 10px; }
+.password-requirements ul { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.password-requirements li { display: flex; align-items: center; gap: 6px; color: #75828c; font-size: 9px; }
+.password-requirements li svg { flex: 0 0 auto; color: #aab5bc; }
+.password-requirements li.passed { color: #126d3a; }
+.password-requirements li.passed svg { color: #168043; }
 .profile-password-submit { margin: 0; min-width: 150px; }
 @media (max-width: 700px) {
   .profile-layout { grid-template-columns: 1fr; gap: 30px; }

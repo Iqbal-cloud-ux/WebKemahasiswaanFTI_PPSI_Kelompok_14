@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { CheckCircle2, Eye, EyeOff, LockKeyhole, X } from 'lucide-react'
-import { bacaHasil, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
+import { Camera, CheckCircle2, Eye, EyeOff, LockKeyhole, X } from 'lucide-react'
+import { bacaHasil, hapusFotoProfilRequest, ubahFotoProfilRequest, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
 import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 import { tandaiSalah } from '../../utils/validasiForm.js'
+import { perkecilFotoProfil } from '../../utils/fotoProfil.js'
 
 // Profil staf: identitas hanya baca, ubah kontak, dan ganti kata sandi (tersambung ke /api/profil).
 export function ProfilStafPage({ user, staffName, initials, onUpdateUser, roleLabel = 'Staf Akademik', unitKerja = 'Akademik - Fakultas Teknologi Informasi' }) {
@@ -15,6 +16,44 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser, roleLa
   const [visiblePasswords, setVisiblePasswords] = useState({ current: false, new: false, confirm: false })
   const [feedback, setFeedback] = useState(null)
   usePesanOtomatis(feedback, () => setFeedback(null), feedback?.type === 'success')
+
+  const passwordCriteria = [
+    { label: 'Minimal 8 karakter', passed: newPassword.length >= 8 },
+    { label: 'Memuat huruf besar (A-Z)', passed: /[A-Z]/.test(newPassword) },
+    { label: 'Memuat huruf kecil (a-z)', passed: /[a-z]/.test(newPassword) },
+    { label: 'Memuat angka (0-9)', passed: /[0-9]/.test(newPassword) },
+    { label: 'Memuat simbol (contoh: !, @, #)', passed: /[^A-Za-z0-9]/.test(newPassword) },
+  ]
+
+  const pilihFoto = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setSaving(true)
+    try {
+      const fotoDiperkecil = await perkecilFotoProfil(file)
+      const profil = await bacaHasil(await ubahFotoProfilRequest(fotoDiperkecil))
+      onUpdateUser({ ...user, foto_profil: profil.foto_profil })
+      setFeedback({ type: 'success', message: 'Foto profil berhasil diperbarui.' })
+    } catch (galat) {
+      setFeedback({ type: 'error', message: galat.message })
+    } finally {
+      setSaving(false)
+      event.target.value = ''
+    }
+  }
+
+  const hapusFoto = async () => {
+    setSaving(true)
+    try {
+      const profil = await bacaHasil(await hapusFotoProfilRequest())
+      onUpdateUser({ ...user, foto_profil: profil.foto_profil })
+      setFeedback({ type: 'success', message: 'Foto profil berhasil dihapus.' })
+    } catch (galat) {
+      setFeedback({ type: 'error', message: galat.message })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const saveContactProfile = async (event) => {
     event.preventDefault()
@@ -76,7 +115,16 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser, roleLa
       {feedback && <div className={`staff-notice ${feedback.type === 'success' ? 'success' : 'error'} staff-profile-feedback`} role="status"><CheckCircle2 size={16} /><span>{feedback.message}</span><button type="button" onClick={() => setFeedback(null)} aria-label="Tutup pesan"><X size={15} /></button></div>}
 
       <section className="staff-profile-summary">
-        <span className="staff-profile-avatar">{initials || 'SA'}</span>
+        <div className="staff-profile-photo">
+          {user.foto_profil
+            ? <img className="staff-profile-avatar" src={user.foto_profil} alt={`Foto ${staffName}`} />
+            : <span className="staff-profile-avatar">{initials || 'SA'}</span>}
+          <label className="staff-profile-photo-edit" title="Ganti foto profil" aria-label="Ganti foto profil">
+            <Camera size={14} />
+            <input type="file" accept="image/jpeg,image/png" onChange={pilihFoto} disabled={saving} />
+          </label>
+          {user.foto_profil && <button type="button" className="staff-profile-photo-remove" onClick={hapusFoto} disabled={saving}>Hapus foto</button>}
+        </div>
         <div className="staff-profile-summary-main">
           <h2>{staffName}</h2>
           <p>{roleLabel}</p>
@@ -129,6 +177,17 @@ export function ProfilStafPage({ user, staffName, initials, onUpdateUser, roleLa
                 </span>
               </label>
             ))}
+            <div className="password-requirements" aria-label="Syarat kata sandi baru">
+              <strong>Syarat kata sandi baru:</strong>
+              <ul>
+                {passwordCriteria.map((item) => (
+                  <li className={item.passed ? 'passed' : ''} key={item.label}>
+                    <CheckCircle2 size={13} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <button type="submit" className="staff-profile-password-save" disabled={saving}>Ubah Kata Sandi</button>
           </form>
         </section>

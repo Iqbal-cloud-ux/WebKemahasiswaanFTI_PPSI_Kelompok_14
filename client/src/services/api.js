@@ -66,6 +66,10 @@ export const ubahKontakRequest = ({ email, no_hp }) => kirimJson('/api/profil', 
 
 export const ubahKataSandiRequest = ({ kata_sandi_lama, kata_sandi_baru }) => kirimJson('/api/profil/kata-sandi', 'PUT', { kata_sandi_lama, kata_sandi_baru })
 
+export const ubahFotoProfilRequest = (foto_profil) => kirimJson('/api/profil/foto', 'PUT', { foto_profil })
+
+export const hapusFotoProfilRequest = () => fetch('/api/profil/foto', { method: 'DELETE', headers: authHeader() })
+
 // Staf: seluruh pengajuan, dan hasil pemeriksaan { keputusan, catatan, berkas: [{ id, status_verifikasi, catatan }] }.
 export const daftarSemuaPengajuanRequest = () => fetch('/api/pengajuan', { headers: authHeader() })
 

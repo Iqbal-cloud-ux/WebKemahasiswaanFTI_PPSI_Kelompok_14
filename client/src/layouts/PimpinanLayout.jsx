@@ -4,7 +4,7 @@ import { ChevronDown, GraduationCap, LogOut, Menu, UserRound, X } from 'lucide-r
 // Kerangka halaman pimpinan (Kepala Kantor, Wakil Dekan 1): sidebar kiri + bar atas.
 // Memakai gaya yang sama dengan portal staf (layouts/portal.css, pages/staf/staf.css).
 // navigasi = [{ kunci, label, icon }], activePage = kunci menu yang aktif.
-export function PimpinanLayout({ nama, peranLabel, navigasi, activePage, sidebarOpen, setSidebarOpen, onOpenPage, onLogout, children }) {
+export function PimpinanLayout({ nama, peranLabel, photoUrl, navigasi, activePage, sidebarOpen, setSidebarOpen, onOpenPage, onLogout, children }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const initials = (nama || peranLabel).split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase()
 
@@ -38,9 +38,11 @@ export function PimpinanLayout({ nama, peranLabel, navigasi, activePage, sidebar
           <div className="staff-topbar-actions">
             <div className="staff-popover-anchor">
               <button type="button" className="staff-profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen}>
-                <span className="staff-avatar">{initials}</span><ChevronDown size={14} />
+                {photoUrl
+                  ? <img className="staff-avatar" src={photoUrl} alt="" />
+                  : <span className="staff-avatar">{initials}</span>}<ChevronDown size={14} />
               </button>
-              {profileOpen && <div className="staff-popover staff-profile-popover"><strong>{nama}</strong><span>{peranLabel}</span><button type="button" onClick={() => { setProfileOpen(false); onOpenPage('profil') }}><UserRound size={14} /> Lihat Profil</button><button type="button" className="staff-profile-logout" onClick={onLogout}><LogOut size={14} /> Keluar</button></div>}
+              {profileOpen && <div className="staff-popover staff-profile-popover"><strong>{nama}</strong><span>{peranLabel}</span><button type="button" aria-label="Lihat profil" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setProfileOpen(false); onOpenPage('profil') }}><UserRound size={14} /> Lihat Profil</button><button type="button" className="staff-profile-logout" onClick={onLogout}><LogOut size={14} /> Keluar</button></div>}
             </div>
           </div>
         </header>

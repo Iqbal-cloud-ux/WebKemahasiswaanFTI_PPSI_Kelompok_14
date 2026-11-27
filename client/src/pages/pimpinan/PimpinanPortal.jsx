@@ -40,6 +40,7 @@ export function PimpinanPortal({ user, onUpdateUser, onLogout }) {
     <PimpinanLayout
       nama={nama}
       peranLabel={peranLabel}
+      photoUrl={user.foto_profil}
       navigasi={NAVIGASI}
       activePage={activePage}
       sidebarOpen={sidebarOpen}

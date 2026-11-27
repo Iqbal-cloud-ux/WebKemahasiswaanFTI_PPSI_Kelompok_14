@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `role` enum('mahasiswa','staf','kakor','wadek1','dekan') NOT NULL,
   `prodi` varchar(100) DEFAULT NULL,
   `no_hp` varchar(20) DEFAULT NULL,
+  `foto_profil` mediumtext DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),

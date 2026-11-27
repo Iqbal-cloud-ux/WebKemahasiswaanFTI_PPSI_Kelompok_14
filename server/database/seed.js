@@ -131,6 +131,7 @@ const AKUN = [
   { identifier: '9900000002', nama: 'Mahasiswa Uji Dua', email: 'mahasiswa2@contoh.test', role: 'mahasiswa', prodi: 'Teknik Komputer', jenjang: 'S1', angkatan: 2026, no_hp: '080000000002', is_active: 1 },
   { identifier: '9900000003', nama: 'Mahasiswa Uji Nonaktif', email: 'mahasiswa3@contoh.test', role: 'mahasiswa', prodi: 'Informatika', jenjang: 'S1', angkatan: 2022, no_hp: '080000000003', is_active: 0 },
   { identifier: '990000000000000001', nama: 'Staf Akademik Uji', email: 'staf@contoh.test', role: 'staf', is_active: 1 },
+  { identifier: '990000000000000005', nama: 'Staf Akademik Uji Pintasan', email: 'staf-pintasan@contoh.test', role: 'staf', is_active: 1 },
   { identifier: '990000000000000002', nama: 'Kepala Kantor Uji', email: 'kakor@contoh.test', role: 'kakor', is_active: 1 },
   { identifier: '990000000000000003', nama: 'Wakil Dekan 1 Uji', email: 'wadek1@contoh.test', role: 'wadek1', is_active: 1 },
   { identifier: '990000000000000004', nama: 'Dekan Uji', email: 'dekan@contoh.test', role: 'dekan', is_active: 1 },
@@ -235,7 +236,7 @@ const seedAkun = async (conn, kataSandi) => {
     );
     if (lama) {
       if (lama.identifier !== akun.identifier || lama.email !== akun.email || lama.role !== akun.role) {
-        console.warn(`PERINGATAN: akun uji ${akun.email} (${akun.role}) dilewati karena NIM/NIP atau email-nya sudah dipakai akun lain: ${lama.identifier} / ${lama.email} (${lama.role}). Hapus akun lama itu bila hanya akun uji, lalu jalankan seed lagi.`);
+        console.warn(`PERINGATAN: akun uji ${akun.email} (${akun.role}) dilewati karena NIM/NIP atau email-nya sudah dipakai akun lain. Akun yang sudah ada tidak diubah.`);
       }
       continue;
     }

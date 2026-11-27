@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Eye, EyeOff, LockKeyhole, X } from 'lucide-react'
-import { bacaHasil, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
+import { Camera, CheckCircle2, Eye, EyeOff, LockKeyhole, X } from 'lucide-react'
+import { bacaHasil, hapusFotoProfilRequest, ubahFotoProfilRequest, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
 import { teksSemester } from '../../utils/semester.js'
 import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 import { tandaiSalah } from '../../utils/validasiForm.js'
+import { perkecilFotoProfil } from '../../utils/fotoProfil.js'
 
 // Profil mahasiswa: data akademik hanya baca, ubah kontak, ganti kata sandi.
 export function ProfilMahasiswaPage({ user, onUpdateUser }) {
@@ -17,8 +18,45 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
   const [visiblePasswords, setVisiblePasswords] = useState({ current: false, new: false, confirm: false })
   usePesanOtomatis(notice, () => setNotice(null), notice?.type === 'success')
 
-  const passwordCriteria = [newPassword.length >= 8, /[A-Z]/.test(newPassword), /[a-z]/.test(newPassword), /[0-9]/.test(newPassword), /[^A-Za-z0-9]/.test(newPassword)]
-  const passwordStrength = passwordCriteria.filter(Boolean).length
+  const pilihFoto = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setSaving(true)
+    try {
+      const fotoDiperkecil = await perkecilFotoProfil(file)
+      const profil = await bacaHasil(await ubahFotoProfilRequest(fotoDiperkecil))
+      onUpdateUser({ ...user, foto_profil: profil.foto_profil })
+      setNotice({ type: 'success', message: 'Foto profil berhasil diperbarui.' })
+    } catch (galat) {
+      setNotice({ type: 'error', message: galat.message })
+    } finally {
+      setSaving(false)
+      event.target.value = ''
+    }
+  }
+
+  const hapusFoto = async () => {
+    setSaving(true)
+    try {
+      const profil = await bacaHasil(await hapusFotoProfilRequest())
+      onUpdateUser({ ...user, foto_profil: profil.foto_profil })
+      setNotice({ type: 'success', message: 'Foto profil berhasil dihapus.' })
+    } catch (galat) {
+      setNotice({ type: 'error', message: galat.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const passwordRequirements = [
+    { label: 'Minimal 8 karakter', passed: newPassword.length >= 8 },
+    { label: 'Memuat huruf besar (A-Z)', passed: /[A-Z]/.test(newPassword) },
+    { label: 'Memuat huruf kecil (a-z)', passed: /[a-z]/.test(newPassword) },
+    { label: 'Memuat angka (0-9)', passed: /[0-9]/.test(newPassword) },
+    { label: 'Memuat simbol (contoh: !, @, #)', passed: /[^A-Za-z0-9]/.test(newPassword) },
+  ]
+  const passwordStrength = passwordRequirements.filter((item) => item.passed).length
+  const passwordCriteria = passwordRequirements.map((item) => item.passed)
 
   const saveProfile = async (event) => {
     event.preventDefault()
@@ -66,6 +104,19 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
             <div className="breadcrumb">Layanan Kemahasiswaan FTI / Mahasiswa</div>
             <div className="profile-heading"><h1>Profil</h1><p>Kelola kontak pribadi dan keamanan akun Anda.</p></div>
             {notice && <div className={`profile-feedback ${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'}><span>{notice.message}</span><button type="button" className="profile-feedback-tutup" onClick={() => setNotice(null)} aria-label="Tutup pesan"><X size={15} /></button></div>}
+            <div className="profile-photo-card">
+              {user.foto_profil
+                ? <img src={user.foto_profil} alt={`Foto ${user.nama || 'Mahasiswa'}`} />
+                : <span>{(user.nama || 'M').split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase()}</span>}
+              <div>
+                <strong>{user.nama || 'Mahasiswa'}</strong>
+                <p>Foto profil JPG atau PNG, maksimal 2 MB.</p>
+                <div className="profile-photo-actions">
+                  <label><Camera size={14} /> Ganti Foto<input type="file" accept="image/jpeg,image/png" onChange={pilihFoto} disabled={saving} /></label>
+                  {user.foto_profil && <button type="button" onClick={hapusFoto} disabled={saving}>Hapus Foto</button>}
+                </div>
+              </div>
+            </div>
             <div className="profile-layout">
               <section className="profile-section">
                 <h2>Data Diri</h2>
@@ -91,6 +142,17 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
                     { key: 'confirm', label: 'Konfirmasi Kata Sandi Baru', placeholder: 'Ulangi kata sandi baru', value: confirmPassword, update: setConfirmPassword, autoComplete: 'new-password' },
                   ].map((field) => <label className="profile-password-card" htmlFor={`password-${field.key}`} key={field.key}><span>{field.label} <b>*</b></span><span className="profile-password-input"><input id={`password-${field.key}`} type={visiblePasswords[field.key] ? 'text' : 'password'} autoComplete={field.autoComplete} required placeholder={field.placeholder} value={field.value} onChange={(event) => field.update(event.target.value)} /><button type="button" aria-label={visiblePasswords[field.key] ? `Sembunyikan ${field.label.toLowerCase()}` : `Tampilkan ${field.label.toLowerCase()}`} onClick={() => setVisiblePasswords((current) => ({ ...current, [field.key]: !current[field.key] }))}>{visiblePasswords[field.key] ? <Eye size={16} /> : <EyeOff size={16} />}</button></span></label>)}
                   <div className="password-strength" aria-label={`Kekuatan kata sandi: ${passwordStrength} dari 5`}><div>{passwordCriteria.map((passed, index) => <span className={passed ? 'passed' : ''} key={index} />)}</div><p>Kekuatan kata sandi: {passwordStrength === 0 ? 'Belum diisi' : passwordStrength < 3 ? 'Lemah' : passwordStrength < 5 ? 'Cukup' : 'Kuat'}</p></div>
+                  <div className="password-requirements" aria-label="Syarat kata sandi baru">
+                    <strong>Syarat kata sandi baru:</strong>
+                    <ul>
+                      {passwordRequirements.map((item) => (
+                        <li className={item.passed ? 'passed' : ''} key={item.label}>
+                          <CheckCircle2 size={13} aria-hidden="true" />
+                          <span>{item.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                   <button type="submit" className="outline-button profile-password-submit" disabled={saving}>Ubah Kata Sandi</button>
                 </form>
               </section>

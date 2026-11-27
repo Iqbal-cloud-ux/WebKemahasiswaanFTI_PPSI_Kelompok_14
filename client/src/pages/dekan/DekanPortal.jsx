@@ -34,6 +34,7 @@ export function DekanPortal({ user, onUpdateUser, onLogout }) {
     <PimpinanLayout
       nama={nama}
       peranLabel="Dekan"
+      photoUrl={user.foto_profil}
       navigasi={NAVIGASI}
       activePage={activePage}
       sidebarOpen={sidebarOpen}

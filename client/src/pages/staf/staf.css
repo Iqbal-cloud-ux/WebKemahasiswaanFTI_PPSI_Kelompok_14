@@ -567,6 +567,11 @@
 .staff-profile-feedback button { display: grid; place-items: center; margin-left: auto; border: 0; color: inherit; background: transparent; cursor: pointer; }
 .staff-profile-summary { min-height: 104px; display: grid; grid-template-columns: 48px minmax(200px, 1fr) auto; align-items: center; gap: 12px; margin-bottom: 14px; padding: 15px 24px; border: 1px solid #dfe7ec; border-radius: 7px; background: #fff; }
 .staff-profile-avatar { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; color: #126d3a; background: #dcf8e6; font-size: 12px; font-weight: 800; }
+img.staff-profile-avatar { display: block; object-fit: cover; }
+ .staff-profile-photo { position: relative; width: 48px; }
+ .staff-profile-photo-edit { position: absolute; right: -5px; bottom: -4px; width: 22px; height: 22px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; color: #fff; background: #126d3a; cursor: pointer; }
+ .staff-profile-photo-edit input { display: none; }
+ .staff-profile-photo-remove { position: absolute; top: 52px; left: 0; width: 76px; padding: 0; border: 0; color: #a52e32; background: transparent; font-size: 8px; cursor: pointer; }
 .staff-profile-summary-main h2 { margin: 0; color: #172033; font-size: 16px; }
 .staff-profile-summary-main p { margin: 7px 0 0; color: #64727e; font-size: 9px; }
 .staff-profile-summary-meta { display: grid; justify-items: end; gap: 8px; color: #71818c; font-size: 8px; }
@@ -594,6 +599,13 @@
 .staff-profile-password-field button { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; display: grid; place-items: center; border: 0; color: #71818c; background: transparent; cursor: pointer; }
 .staff-profile-password-save { width: 130px; height: 36px; border: 1px solid #4d6d5a; border-radius: 5px; color: #344252; background: #fff; font-size: 9px; font-weight: 700; cursor: pointer; }
 .staff-profile-password-save:hover { border-color: #126d3a; color: #126d3a; background: #effaf3; }
+.password-requirements { margin-top: 2px; padding: 10px; border: 1px solid #dfe7ec; border-radius: 5px; background: #f8fafb; }
+.password-requirements > strong { color: #344252; font-size: 9px; }
+.password-requirements ul { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.password-requirements li { display: flex; align-items: center; gap: 6px; color: #71818c; font-size: 9px; }
+.password-requirements li svg { flex: 0 0 auto; color: #aab5bc; }
+.password-requirements li.passed { color: #126d3a; }
+.password-requirements li.passed svg { color: #168043; }
 @media (max-width: 720px) {
   .staff-profile-summary { grid-template-columns: 48px minmax(0, 1fr); padding: 15px; }
   .staff-profile-summary-meta { grid-column: 1 / -1; justify-items: start; padding-top: 4px; }
