@@ -4,6 +4,30 @@ const QRCode = require('qrcode');
 
 const HALAMAN_A4 = { lebar: 595.28, tinggi: 841.89 };
 const UKURAN_QR = 144;
+// Alamat client saat pengembangan (Vite). Di server sungguhan ALAMAT_VERIFIKASI wajib diisi (lihat app.js).
+const ALAMAT_VERIFIKASI_BAWAAN = 'http://localhost:5173';
+
+// Alamat dasar halaman verifikasi publik dari ALAMAT_VERIFIKASI di .env, tanpa garis miring di akhir.
+const alamatVerifikasi = (nilai = process.env.ALAMAT_VERIFIKASI) => {
+  const teks = typeof nilai === 'string' ? nilai.trim() : '';
+  if (!teks) return ALAMAT_VERIFIKASI_BAWAAN;
+  let alamat;
+  try {
+    alamat = new URL(teks);
+  } catch {
+    throw new Error('ALAMAT_VERIFIKASI di server/.env bukan alamat yang valid. Contoh: http://192.168.1.10:5173');
+  }
+  if (!['http:', 'https:'].includes(alamat.protocol)) {
+    throw new Error('ALAMAT_VERIFIKASI di server/.env harus diawali http:// atau https://');
+  }
+  return `${alamat.origin}${alamat.pathname.replace(/\/+$/, '')}`;
+};
+
+// Isi QR: tautan ke halaman /verifikasi yang langsung memeriksa nomor dan hash saat dibuka dari HP.
+const tautanVerifikasi = (nomor, hash, alamat = alamatVerifikasi()) => {
+  const parameter = new URLSearchParams({ nomor, hash });
+  return `${alamat}/verifikasi?${parameter.toString()}`;
+};
 
 const buatKodeVerifikasi = async (pdfSumber, nomor) => {
   if (!Buffer.isBuffer(pdfSumber) || pdfSumber.length === 0) {
@@ -14,8 +38,8 @@ const buatKodeVerifikasi = async (pdfSumber, nomor) => {
   }
 
   const hashSha256 = crypto.createHash('sha256').update(pdfSumber).digest('hex');
-  const payload = JSON.stringify({ nomor: nomor.trim(), hash: hashSha256 });
-  const qrPng = await QRCode.toBuffer(payload, { type: 'png', errorCorrectionLevel: 'M', margin: 2 });
+  const isiQr = tautanVerifikasi(nomor.trim(), hashSha256);
+  const qrPng = await QRCode.toBuffer(isiQr, { type: 'png', errorCorrectionLevel: 'M', margin: 2 });
   return { hashSha256, qrPng };
 };
 
@@ -87,4 +111,4 @@ const tempelLembarVerifikasi = async ({ pdfSumber, qrPng, noReferensi, hashSha25
   return Buffer.from(await dokumen.save());
 };
 
-module.exports = { buatKodeVerifikasi, tempelLembarVerifikasi };
+module.exports = { alamatVerifikasi, tautanVerifikasi, buatKodeVerifikasi, tempelLembarVerifikasi };

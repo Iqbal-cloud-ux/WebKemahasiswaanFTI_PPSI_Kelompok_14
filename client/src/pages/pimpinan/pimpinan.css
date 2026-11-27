@@ -28,3 +28,38 @@
 .pimpinan-keputusan .staff-review-actions { margin-top: 4px; }
 .pimpinan-keputusan .staff-review-actions button { display: inline-flex; align-items: center; gap: 5px; }
 .pimpinan-konfirmasi .staff-config-delete-icon.setujui { color: #16763f; background: #effaf3; }
+
+/* Beranda Dekan (dekan/BerandaDekanPage.jsx) */
+.dekan-pengesahan { margin: 14px 0; }
+.dekan-pengesahan span { display: flex; align-items: center; gap: 7px; }
+.dekan-lihat-semua svg { transform: none; }
+
+/* Halaman pemeriksaan pimpinan (dekan/DetailKeputusanPage.jsx, pimpinan/DetailPemeriksaanPage.jsx):
+   PDF langsung di kiri; kotak keputusan, ringkasan, dan alur persetujuan di kanan. */
+.pimpinan-review-layout { grid-template-columns: minmax(0, 1fr) 340px; }
+.pimpinan-review-layout .staff-review-applicant-grid dl div { grid-template-columns: 105px minmax(0, 1fr); align-items: start; padding: 3px 0; }
+.pimpinan-review-layout .staff-review-applicant-grid dd { overflow-wrap: anywhere; }
+.pimpinan-keputusan-samping { margin-top: 0; }
+.pimpinan-keputusan-samping h2 { margin: 0 0 4px; }
+.pimpinan-keputusan-samping p { margin: 0; color: #64727e; font-size: 9px; }
+.pimpinan-keputusan-tombol { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 2px; }
+.pimpinan-keputusan-tombol button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 5px; font-size: 9px; font-weight: 700; cursor: pointer; }
+.pimpinan-keputusan-tombol button:disabled { opacity: .6; cursor: not-allowed; }
+.pimpinan-keputusan-tombol .staff-review-verify { grid-column: 1 / -1; }
+@media (max-width: 1000px) {
+  .pimpinan-review-layout { grid-template-columns: minmax(0, 1fr) 280px; }
+}
+@media (max-width: 720px) {
+  .pimpinan-review-layout { grid-template-columns: 1fr; }
+  .pimpinan-review-layout .staff-review-aside { grid-row: auto; }
+}
+
+/* Log Aktivitas pimpinan (pimpinan/LogAktivitasPage.jsx) */
+.log-filter { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); align-items: end; gap: 12px; margin-bottom: 14px; }
+.log-filter input[type="date"] { width: 100%; height: 36px; padding: 0 9px; border: 1px solid #dfe7ec; border-radius: 5px; color: #344252; background: #fff; font-size: 10px; }
+.log-filter-aksi { display: flex; align-items: center; gap: 14px; }
+.log-filter-aksi .staff-profile-save { width: auto; margin: 0; padding: 0 18px; }
+.log-muat-ulang svg { transform: none; }
+.log-tabel td.log-keterangan { min-width: 260px; white-space: normal; line-height: 1.5; }
+.log-tanpa-pengguna { color: #87949d; }
+.pimpinan-keputusan-tombol.dua { grid-template-columns: 1fr; }

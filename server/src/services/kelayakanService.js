@@ -2,6 +2,7 @@
 // (docs/persyaratan-layanan.md). Layanan tanpa aturan di sini boleh diajukan semua mahasiswa.
 const db = require('../config/db');
 const { hitungSemester } = require('../utils/semester');
+const { statusStudi } = require('../utils/statusStudi');
 
 const BOLEH = { boleh: true, alasan: null };
 
@@ -32,7 +33,10 @@ const ATURAN = {
 };
 
 // layanan: { id, kode_layanan }, mahasiswa: baris users (id, jenjang, angkatan).
+// Mahasiswa yang sudah lulus (masa tenggang) tidak boleh membuat pengajuan baru untuk layanan apa pun.
 const periksaKelayakan = async ({ layanan, mahasiswa }, executor = db) => {
+  const status = statusStudi(mahasiswa);
+  if (!status.bolehAjukan) return { boleh: false, alasan: status.pesan };
   const aturan = ATURAN[layanan.kode_layanan];
   return aturan ? aturan(executor, { layanan, mahasiswa }) : BOLEH;
 };

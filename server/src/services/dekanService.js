@@ -10,6 +10,7 @@ const { buatNomorSurat } = require('../utils/nomorSurat');
 const { denganTransaksi } = require('../utils/transaksi');
 const { GalatAplikasi } = require('../utils/galat');
 const { buatKodeVerifikasi, tempelLembarVerifikasi } = require('./pengesahanPdfService');
+const { keTanggal, statusStudi, tanggalIndonesia } = require('../utils/statusStudi');
 
 const FOLDER_UPLOADS = path.resolve(__dirname, '../../uploads');
 const FOLDER_SURAT = path.join(FOLDER_UPLOADS, 'letters');
@@ -110,6 +111,40 @@ const tulisFileBaru = async (lokasi, isi, fileDibuat) => {
   }
 };
 
+// Surat Keterangan Lulus yang terbit menandai mahasiswa lulus (migrasi 007, utils/statusStudi.js):
+// akun masih bisa dipakai selama masa tenggang untuk mengunduh surat, lalu tertutup.
+// Tanggal lulus yang sudah diisi staf tidak ditimpa.
+const LAYANAN_PENANDA_LULUS = 'KET-LULUS';
+
+const tandaiLulusOtomatis = async (conn, { pengajuan, tglTerbit, aktor, ipAddress }) => {
+  let perubahan;
+  try {
+    [perubahan] = await conn.query(
+      'UPDATE users SET tgl_lulus = ? WHERE id = ? AND role = \'mahasiswa\' AND tgl_lulus IS NULL',
+      [tglTerbit, pengajuan.mahasiswa_id]
+    );
+  } catch (error) {
+    // Database yang belum menjalankan migrasi 007 tetap bisa menerbitkan surat.
+    if (error.code !== 'ER_BAD_FIELD_ERROR') throw error;
+    console.warn('Kolom users.tgl_lulus belum ada. Jalankan migrasi 007_status_studi_mahasiswa.sql.');
+    return;
+  }
+  if (perubahan.affectedRows !== 1) return;
+
+  const tutup = tanggalIndonesia(keTanggal(statusStudi({ role: 'mahasiswa', tgl_lulus: tglTerbit }).tutupPada));
+  await conn.query(
+    'INSERT INTO notifikasi (user_id, pengajuan_id, judul, pesan) VALUES (?, ?, ?, ?)',
+    [pengajuan.mahasiswa_id, pengajuan.id, 'Akun Anda akan ditutup',
+      `Selamat atas kelulusan Anda. Akun ini masih bisa dipakai untuk melihat dan mengunduh surat sampai ${tutup}, lalu akan ditutup. Unduh semua surat yang Anda perlukan sebelum tanggal itu.`]
+  );
+  await LogAktivitas.create({
+    userId: aktor.id,
+    action: 'tandai_lulus',
+    description: `Mahasiswa pengajuan ${pengajuan.no_referensi} ditandai lulus otomatis (Surat Keterangan Lulus terbit)`,
+    ipAddress,
+  }, conn);
+};
+
 const setujui = ({ pengajuanId, aktor, catatan, ipAddress }) => {
   periksaAktor(aktor);
   const teks = teksCatatan(catatan);
@@ -118,7 +153,7 @@ const setujui = ({ pengajuanId, aktor, catatan, ipAddress }) => {
   return denganTransaksi(async (conn) => {
     try {
       const [[pengajuan]] = await conn.query(
-        `SELECT p.id, p.no_referensi, p.status, j.kode_layanan, t.format_nomor
+        `SELECT p.id, p.no_referensi, p.mahasiswa_id, p.status, j.kode_layanan, t.format_nomor
          FROM pengajuan p
          JOIN jenis_layanan j ON j.id = p.jenis_layanan_id
          LEFT JOIN template_surat t ON t.jenis_layanan_id = p.jenis_layanan_id
@@ -192,6 +227,9 @@ const setujui = ({ pengajuanId, aktor, catatan, ipAddress }) => {
         description: `Dekan menyetujui dan menerbitkan surat pengajuan ${pengajuan.no_referensi}`,
         ipAddress,
       }, conn);
+      if (pengajuan.kode_layanan === LAYANAN_PENANDA_LULUS) {
+        await tandaiLulusOtomatis(conn, { pengajuan, tglTerbit, aktor, ipAddress });
+      }
 
       return {
         pengajuan_id: pengajuanId,

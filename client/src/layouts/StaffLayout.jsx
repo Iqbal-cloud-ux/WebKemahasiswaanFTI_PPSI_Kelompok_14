@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Archive, BarChart3, Bell, ChevronDown, FilePlus2, FileText, GraduationCap, Home, Inbox, LogOut, Menu, UserRound, X } from 'lucide-react'
+import { Archive, BarChart3, Bell, ChevronDown, FilePlus2, FileText, GraduationCap, Home, Inbox, LogOut, Menu, UserRound, Users, X } from 'lucide-react'
 
 // Kerangka halaman staf: sidebar kiri + bar atas. Gaya ada di layouts/portal.css.
 const NAVIGATION = [
@@ -8,6 +8,7 @@ const NAVIGATION = [
   { label: 'Draf Surat', icon: FileText },
   { label: 'Arsip Surat', icon: Archive },
   { label: 'Jenis Layanan & Template', icon: FilePlus2 },
+  { label: 'Manajemen Akun', icon: Users },
 ]
 
 export function StaffLayout({ staffName, initials, photoUrl, activePage, sidebarOpen, setSidebarOpen, onOpenPage, onLogout, children }) {

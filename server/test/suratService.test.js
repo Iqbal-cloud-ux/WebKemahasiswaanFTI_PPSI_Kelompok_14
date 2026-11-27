@@ -75,6 +75,22 @@ test('mahasiswa tidak dapat mengunduh surat milik mahasiswa lain', async () => {
   assert.equal(logDitulis, false);
 });
 
+test('mahasiswa lain tidak bisa mengetahui status pengajuan yang belum terbit', async () => {
+  db.query = async () => [[{
+    no_referensi: 'PGJ-2026-00013',
+    mahasiswa_id: 8,
+    status: 'pending_dekan',
+    status_draf: 'diteruskan',
+    no_surat: null,
+    file_pdf_path: null,
+  }], []];
+
+  await assert.rejects(
+    suratTerbit(13, { id: 9, role: 'mahasiswa' }, '127.0.0.1'),
+    { status: 403, message: 'Anda tidak berhak mengunduh surat ini' }
+  );
+});
+
 test('unduhan surat menolak path di luar folder arsip privat', async () => {
   db.query = async () => [[{
     no_referensi: 'PGJ-2026-00012',

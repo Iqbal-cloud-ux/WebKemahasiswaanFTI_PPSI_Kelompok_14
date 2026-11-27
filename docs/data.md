@@ -19,11 +19,14 @@ Konvensi kolom
 - Nilai ya/tidak memakai TINYINT(1) dengan awalan `is_` (misalnya `is_active`, `is_read`).
 - Charset utf8mb4, collation utf8mb4_general_ci, engine InnoDB.
 
-Tabel (11 di schema.sql + 2 dari migrasi 001 + 1 dari migrasi 004 + 1 dari migrasi 005; migrasi 002 sampai 005 menambah kolom)
+Tabel (11 di schema.sql + 2 dari migrasi 001 + 1 dari migrasi 004 + 1 dari migrasi 005; migrasi 002 sampai 008 menambah kolom)
 
-users: id, identifier (NIM/NIP, unik), nama, email (unik), password (hash bcrypt, tidak boleh teks biasa), role, prodi, jenjang, angkatan, no_hp, foto_profil (migrasi 006, data URL JPG/PNG maks 2 MB), is_active (migrasi 002, default 1), created_at, updated_at.
-  Akun dengan is_active = 0 ditolak saat login dan saat memperpanjang sesi.
-  jenjang (misalnya 'S1') dan angkatan (tahun masuk) ditambahkan di migrasi 003; hanya diisi untuk mahasiswa. Dipakai untuk memeriksa syarat peserta Permohonan Penyesuaian UKT; semester dihitung dari angkatan.
+users: id, identifier (NIM/NIP, unik), nama, email (unik), password (hash bcrypt, tidak boleh teks biasa), wajib_ganti_sandi dan versi_token (migrasi 008), role, prodi, jenjang, angkatan, tgl_lulus dan tambahan_semester (migrasi 007), no_hp, foto_profil (migrasi 006, data URL JPG/PNG maks 2 MB), is_active (migrasi 002, default 1), created_at, updated_at.
+  Akun dengan is_active = 0 (dinonaktifkan manual) ditolak saat login, saat memperpanjang sesi, dan pada setiap permintaan.
+  Sesi (migrasi 008): setiap token login memuat versi_token akun. versi_token naik saat logout, ganti kata sandi, atau reset kata sandi oleh staf, sehingga semua token lama (juga di perangkat lain) langsung ditolak; logout di satu perangkat mengakhiri sesi di semua perangkat. wajib_ganti_sandi = 1 setelah Staf Akademik mereset kata sandi mahasiswa (kata sandi sementara acak, hanya ditampilkan sekali ke staf, tidak ditulis ke log); selama itu server hanya melayani ganti kata sandi, profil, perpanjangan sesi, dan logout.
+  jenjang (misalnya 'S1') dan angkatan (tahun masuk) ditambahkan di migrasi 003; hanya diisi untuk mahasiswa. Dipakai untuk memeriksa syarat peserta Permohonan Penyesuaian UKT dan masa studi; semester dihitung dari angkatan.
+  NIM mahasiswa FTI (server/src/utils/nim.js): 10 digit; digit 1-2 tahun masuk, digit 3 jenjang (1 = S1), digit 4-5 fakultas (harus 15 = FTI). Saat staf mengubah data di Manajemen Akun, angkatan (dan jenjang bila kodenya 1) diambil dari NIM.
+  Status studi (migrasi 007, keputusan 27 November 2026, server/src/utils/statusStudi.js): akun mahasiswa ditutup otomatis bila (a) 30 hari sudah lewat sejak tgl_lulus, atau (b) semester berjalan melewati 14 + tambahan_semester. Selama 30 hari masa tenggang setelah lulus, mahasiswa masih bisa login untuk melihat dan mengunduh surat, tetapi tidak bisa membuat pengajuan baru. tgl_lulus terisi otomatis saat Surat Keterangan Lulus (KET-LULUS) terbit, atau diisi Staf Akademik; tambahan_semester (perpanjangan, misalnya karena cuti) diisi Staf Akademik.
   role = ENUM('mahasiswa', 'staf', 'kakor', 'wadek1', 'dekan'). kakor = Kepala Kantor, wadek1 = Wakil Dekan 1. Staf Akademik (`staf`) juga bertindak sebagai admin.
   Data akademik mahasiswa (NIM, prodi) disimpan langsung di tabel ini; tidak ada tabel mahasiswa terpisah.
 
@@ -62,14 +65,14 @@ persetujuan: id, pengajuan_id (FK), pimpinan_id (FK ke users.id), role_pimpinan 
 surat_resmi: id, pengajuan_id (FK, unik: satu surat per pengajuan), status_draf, isi_draf, file_draf_path, penanda_tangan (migrasi 004), no_surat (unik), file_pdf_path, hash_sha256, qr_code_path, tgl_terbit, created_at, updated_at. PDF di server/uploads/letters/.
   Tabel ini menyimpan draf sekaligus surat final. Baris dibuat saat staf pertama kali menyimpan draf; no_surat, hash, QR, PDF final, dan tgl_terbit baru diisi saat Dekan menyetujui.
   penanda_tangan = JSON salinan data penanda tangan (nama, nip, pangkat_golongan, jabatan, atas_nama) saat draf terakhir disimpan. Penerbitan surat wajib memakai salinan ini, bukan data penanda_tangan terbaru, agar surat tidak berubah (dan hash tetap cocok) bila pejabat berganti.
-  hash_sha256 adalah sidik jari PDF sumber sebelum QR ditambahkan; qr_code_path menunjuk PNG dengan payload JSON `{ "nomor": "<no_surat atau no_referensi>", "hash": "<hash_sha256>" }`. Untuk TIDAK-BEASISWA, PDF final mempertahankan pindaian asli dan menambahkan halaman verifikasi di bagian akhir.
+  hash_sha256 adalah sidik jari PDF sumber sebelum QR ditambahkan; qr_code_path menunjuk PNG berisi tautan verifikasi `<ALAMAT_VERIFIKASI>/verifikasi?nomor=<no_surat atau no_referensi>&hash=<hash_sha256>` (surat yang terbit sebelum 27 November 2026 memuat payload JSON `{ "nomor": "...", "hash": "..." }`; lihat docs/alur-status.md). Untuk TIDAK-BEASISWA, PDF final mempertahankan pindaian asli dan menambahkan halaman verifikasi di bagian akhir.
   status_draf (migrasi 002) = ENUM('dibuat', 'dikembalikan', 'diteruskan', 'terbit'), default 'dibuat'. Pengajuan diverifikasi yang belum punya baris surat_resmi berarti draf "Belum Dibuat". Pemetaan ke label ada di docs/alur-status.md.
 
 public_verification: id, surat_id (FK ke surat_resmi), scanned_at, user_agent, ip_address. Mencatat setiap pemeriksaan keaslian surat lewat halaman publik.
 
 config_tte: id, provider_name, api_endpoint, encrypted_secret_key (terenkripsi, tidak pernah ditampilkan kembali), is_active, updated_at. Hanya dikelola Dekan (dibatasi di kode, bukan di database).
 
-log_aktivitas: id, user_id (FK, SET NULL bila akun dihapus), action, description, ip_address, created_at. Hanya boleh ditambah; tidak boleh diubah atau dihapus lewat antarmuka. Dipakai untuk login, pembukaan dokumen persyaratan, paraf, keputusan, penerbitan dan unduhan surat, serta perubahan pengaturan TTE.
+log_aktivitas: id, user_id (FK, SET NULL bila akun dihapus), action, description, ip_address, created_at. Hanya boleh ditambah; tidak boleh diubah atau dihapus lewat antarmuka. Dipakai untuk login, pembukaan dokumen persyaratan, paraf, keputusan, penerbitan dan unduhan surat, serta perubahan pengaturan TTE. Dibaca lewat GET /api/log (khusus Dekan; tanpa ip_address); tidak ada endpoint untuk mengubah atau menghapusnya.
 
 riwayat_status (migrasi 001): id, pengajuan_id (FK), user_id (FK pelaku, boleh NULL), status_sebelumnya (NULL untuk pengiriman pertama), status_baru, catatan, created_at. Satu baris untuk setiap perpindahan status pengajuan. Nilai status sama dengan pengajuan.status.
 

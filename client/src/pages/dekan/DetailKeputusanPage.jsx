@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { AlertCircle, Check, ChevronLeft, Clock3, Eye, FileText, PenLine, Undo2, X } from 'lucide-react'
+import { PdfSematan } from '../../components/PdfSematan.jsx'
 import { PratinjauBerkas } from '../../components/PratinjauBerkas.jsx'
 import { bacaHasil, detailDekanRequest, kembalikanKeputusanDekanRequest, pdfDrafRequest, pratinjauSuratTerbitRequest, setujuiKeputusanDekanRequest, tolakKeputusanDekanRequest } from '../../services/api.js'
 import { formatTanggal, formatWaktu, statusStaf } from '../../utils/statusPengajuan.js'
@@ -94,16 +95,29 @@ export function DetailKeputusanPage({ onKembali }) {
       {!giliranSaya && <div className="staff-notice info" role="status"><span>Surat ini tidak sedang menunggu keputusan Dekan ({statusStaf(pengajuan.status).label}). Halaman ini hanya untuk dibaca.</span></div>}
       {error && <div className="staff-notice error" role="alert"><AlertCircle size={16} /><span>{error}</span><button type="button" className="pimpinan-tutup" onClick={() => setError('')} aria-label="Tutup pesan"><X size={15} /></button></div>}
 
-      <div className="staff-review-layout">
+      <div className="staff-review-layout pimpinan-review-layout">
         <div className="staff-review-main">
           <section className="staff-panel pimpinan-pdf-panel">
-            <h2>Pratinjau Surat</h2>
-            <p>{suratTerbit ? 'Surat final telah diterbitkan dengan kode QR verifikasi.' : 'Periksa isi draf sebelum memberi keputusan akhir.'}</p>
-            <button type="button" className="staff-review-button" onClick={() => setPratinjau({ jenis: suratTerbit ? 'terbit' : 'draf' })}><Eye size={13} /> {suratTerbit ? 'Lihat PDF terbit (QR)' : 'Lihat PDF draf'}</button>
+            <h2>{suratTerbit ? 'Surat Terbit (dengan QR verifikasi)' : 'Pratinjau Draf Surat'}</h2>
+            <PdfSematan muat={muatPdf} judul={suratTerbit ? 'Surat terbit' : 'Pratinjau draf surat'} />
           </section>
         </div>
 
         <aside className="staff-review-aside">
+          {giliranSaya && (
+            <section className="staff-panel pimpinan-keputusan pimpinan-keputusan-samping">
+              <h2>Keputusan Dekan</h2>
+              <label htmlFor="catatan-dekan">Catatan (wajib untuk mengembalikan atau menolak; opsional saat menyetujui)</label>
+              <textarea id="catatan-dekan" maxLength={1000} value={catatan} onChange={(event) => setCatatan(event.target.value)} placeholder="Tuliskan catatan untuk Staf Akademik atau alasan penolakan." />
+              <p>Pastikan semua isi surat sudah benar sebelum memberi keputusan.</p>
+              <div className="pimpinan-keputusan-tombol">
+                <button type="button" className="staff-review-verify" disabled={sending} onClick={() => buka('setujui')}><PenLine size={13} /> Setujui</button>
+                <button type="button" className="staff-review-correction" disabled={sending} onClick={() => buka('kembalikan')}><Undo2 size={13} /> Kembalikan</button>
+                <button type="button" className="staff-review-reject" disabled={sending} onClick={() => buka('tolak')}><X size={13} /> Tolak</button>
+              </div>
+            </section>
+          )}
+
           <section className="staff-panel staff-review-applicant">
             <h2>Ringkasan Pengajuan</h2>
             <div className="staff-review-applicant-grid">
@@ -150,21 +164,6 @@ export function DetailKeputusanPage({ onKembali }) {
         </aside>
       </div>
 
-      {giliranSaya && (
-        <section className="staff-panel pimpinan-keputusan">
-          <label htmlFor="catatan-dekan">Catatan (wajib untuk mengembalikan atau menolak; opsional saat menyetujui)</label>
-          <textarea id="catatan-dekan" maxLength={1000} value={catatan} onChange={(event) => setCatatan(event.target.value)} placeholder="Tuliskan catatan untuk Staf Akademik atau alasan penolakan." />
-          <div className="staff-review-actions">
-            <p>Pastikan semua isi surat sudah benar sebelum memberi keputusan.</p>
-            <div>
-              <button type="button" className="staff-review-correction" disabled={sending} onClick={() => buka('kembalikan')}><Undo2 size={13} /> Kembalikan</button>
-              <button type="button" className="staff-review-reject" disabled={sending} onClick={() => buka('tolak')}><X size={13} /> Tolak</button>
-              <button type="button" className="staff-review-verify" disabled={sending} onClick={() => buka('setujui')}><PenLine size={13} /> Setujui</button>
-            </div>
-          </div>
-        </section>
-      )}
-
       {konfirmasi && (
         <div className="staff-editor-overlay">
           <section className="staff-config-delete pimpinan-konfirmasi" role="alertdialog" aria-modal="true" aria-labelledby="konfirmasi-dekan-judul">
@@ -181,11 +180,7 @@ export function DetailKeputusanPage({ onKembali }) {
         </div>
       )}
 
-      {pratinjau && (pratinjau.jenis === 'draf'
-        ? <PratinjauBerkas judul="Pratinjau draf surat" subjudul={pengajuan.no_referensi} muat={muatPdf} onClose={tutupPratinjau} />
-        : pratinjau.jenis === 'terbit'
-          ? <PratinjauBerkas judul="Surat resmi terbit" subjudul={pengajuan.no_referensi} muat={muatPdf} onClose={tutupPratinjau} />
-          : <PratinjauBerkas berkas={pratinjau} onClose={tutupPratinjau} />)}
+      {pratinjau && <PratinjauBerkas berkas={pratinjau} onClose={tutupPratinjau} />}
     </>
   )
 }

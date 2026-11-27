@@ -2,6 +2,7 @@ const path = require('path');
 const Pengajuan = require('../models/pengajuanModel');
 const { buatPengajuan, ajukanUlang } = require('../services/pengajuanService');
 const { periksaPengajuan } = require('../services/pemeriksaanService');
+const { daftarAktivitas } = require('../services/aktivitasService');
 const { TAHAP_PIMPINAN } = require('../services/statusService');
 const { hapusBerkas } = require('../middlewares/unggahBerkas');
 const { ISIAN_LAYANAN, KEPERLUAN_TETAP } = require('../utils/templateSurat');
@@ -81,6 +82,15 @@ const daftarSemuaPengajuan = async (req, res) => {
   }
 };
 
+// GET /api/pengajuan/aktivitas?jumlah=8 (staf): perpindahan status terbaru untuk Beranda Staf.
+const aktivitasTerbaru = async (req, res) => {
+  try {
+    return sendSuccess(res, 'Aktivitas terbaru', await daftarAktivitas({ id: req.user.id, role: req.user.role }, req.query.jumlah));
+  } catch (error) {
+    return tanganiGalat(res, error, 'Aktivitas Terbaru');
+  }
+};
+
 // POST /api/pengajuan/:id/pemeriksaan (staf)
 // Body: { keputusan: 'verifikasi' | 'perbaikan' | 'tolak', catatan, berkas: [{ id, status_verifikasi, catatan }] }
 const periksa = async (req, res) => {
@@ -128,4 +138,6 @@ const ajukanUlangPengajuan = async (req, res) => {
   }
 };
 
-module.exports = { kirimPengajuan, daftarPengajuanSaya, detailPengajuan, daftarSemuaPengajuan, periksa, ajukanUlangPengajuan };
+module.exports = {
+  kirimPengajuan, daftarPengajuanSaya, detailPengajuan, daftarSemuaPengajuan, aktivitasTerbaru, periksa, ajukanUlangPengajuan,
+};

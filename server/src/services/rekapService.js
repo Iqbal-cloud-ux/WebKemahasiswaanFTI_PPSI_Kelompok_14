@@ -145,7 +145,15 @@ const ambilRekap = async (input, aktor) => {
   };
 };
 
-const csvEscape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+// Teks yang diawali = + - @ (atau tab/baris baru) dibaca Excel sebagai rumus (CSV injection), misalnya
+// nama layanan yang diisi staf. Teks seperti itu diberi awalan petik satu agar tampil apa adanya.
+// Angka tidak diubah.
+const POLA_RUMUS = /^[=+\-@\t\r]/;
+const csvEscape = (value) => {
+  const teks = String(value ?? '');
+  const aman = typeof value === 'string' && POLA_RUMUS.test(teks) ? `'${teks}` : teks;
+  return `"${aman.replace(/"/g, '""')}"`;
+};
 
 const eksporCsv = async (input, aktor, ipAddress) => {
   const data = await ambilRekap(input, aktor);

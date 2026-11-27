@@ -89,42 +89,53 @@ client/   Frontend: Vite + React (JavaScript, bukan TypeScript)
   src/
     App.jsx                 daftar rute per peran (React Router); jangan menaruh halaman di sini
     main.jsx                titik masuk, BrowserRouter, impor CSS (urutan impor CSS penting)
-    pages/auth/             LoginPage.jsx + login.css
+    pages/auth/             LoginPage.jsx, GantiSandiAwalPage.jsx (wajib ganti kata sandi sementara) + login.css
     pages/mahasiswa/        MahasiswaPortal.jsx (rute /mahasiswa/... + state bersama) dan satu file per halaman
-    pages/staf/             StafPortal.jsx (cek akses + rute /staf/...) dan satu file per halaman
+    pages/staf/             StafPortal.jsx (cek akses + rute /staf/...) dan satu file per halaman,
+                            termasuk ManajemenAkunPage.jsx (#131)
     pages/galat/            AksesDitolakPage.jsx (403) dan TidakDitemukanPage.jsx (404)
     pages/pimpinan/         PimpinanPortal.jsx (rute /kepala-kantor/... dan /wakil-dekan/...): antrean paraf,
-                            detail pemeriksaan, riwayat pengesahan + pimpinan.css
-    pages/PeranBelumTersediaPage.jsx  sementara untuk dekan
+                            detail pemeriksaan, riwayat pengesahan + pimpinan.css (juga dipakai halaman Dekan)
+    pages/dekan/            DekanPortal.jsx (rute /dekan/...): beranda, antrean keputusan, tinjau surat,
+                            riwayat keputusan, log aktivitas (khusus Dekan)
+    pages/verifikasi/       VerifikasiSuratPage.jsx: halaman publik /verifikasi (tanpa login)
+    pages/PeranBelumTersediaPage.jsx  cadangan untuk peran yang tidak dikenal
     layouts/                StudentLayout.jsx, StaffLayout.jsx, PimpinanLayout.jsx (sidebar + bar atas) + portal.css
-    hooks/useSession.js     login, logout, perpanjangan dan berakhirnya sesi
+    hooks/useSession.js     login, logout, perpanjangan, pemeriksaan sesi tiap menit, dan sinkron antar-tab
     hooks/useDataServer.js  ambil data dari server: { status: memuat|siap|galat, data, pesan } + muat ulang
+    hooks/usePesanOtomatis.js  menutup pesan berhasil setelah beberapa detik
     services/api.js         semua fetch ke server (tambahkan endpoint baru di sini); bacaHasil() membaca respons
+                            dan mengakhiri sesi bila server menjawab 401
     utils/                  roles.js (peran), statusPengajuan.js (label/warna status), berkas.js (aturan unggah),
-                            semester.js
-    data/contohStaf.js      data contoh (palsu) untuk halaman staf yang belum tersambung ke server
+                            semester.js, nim.js (struktur NIM), isian.js, validasiForm.js, fotoProfil.js
     styles/dasar.css        gaya dasar elemen HTML
     components/             komponen bersama: PenjagaPeran.jsx (belum login -> Login, peran lain -> 403),
-                            ErrorBoundary.jsx (penangkap galat tampilan), KartuPesan.jsx,
-                            PratinjauBerkas.jsx (buka berkas persyaratan lewat /api/berkas/:id)
+                            ErrorBoundary.jsx (penangkap galat tampilan), KartuPesan.jsx, InputIsian.jsx,
+                            PratinjauBerkas.jsx (pop-up berkas lewat /api/berkas/:id),
+                            PdfSematan.jsx (PDF langsung di halaman, diambil dengan token)
     context/                untuk context bersama (belum dipakai)
   vite.config.js  eslint.config.js  index.html  package.json
 server/   Backend: Node.js + Express (REST API)
   src/
     config/db.js            koneksi database
-    controllers/            logika penanganan request (auth, layanan, pengajuan, profil)
-    middlewares/            authMiddleware.js (token + peran), loginLimiter.js,
+    controllers/            logika penanganan request: auth, akun, berkas, dekan, draf, layanan, log,
+                            notifikasi, paraf, pengajuan, profil, rekap, surat, verifikasi
+    middlewares/            authMiddleware.js (token + versi token + status akun + peran), loginLimiter.js,
+                            pembatasLaju.js (batas permintaan publik per IP),
                             unggahBerkas.js (terima berkas PDF/JPG/PNG maks 5 MB)
-    models/                 akses data (user, log, layanan, pengajuan)
+    models/                 akses data (user, log, layanan, pengajuan, notifikasi)
     routes/                 definisi endpoint, didaftarkan di app.js
     services/               logika bisnis; statusService.js = satu-satunya tempat mengubah
                             pengajuan.status (riwayat + notifikasi + log dalam satu transaksi)
     utils/                  responseHandler.js (format respons), galat.js (GalatAplikasi),
-                            transaksi.js (denganTransaksi), semester.js
-    app.js                  konfigurasi Express
+                            transaksi.js (denganTransaksi), semester.js, token.js (buat token login),
+                            statusStudi.js (status akun mahasiswa), nim.js, nomorSurat.js, templateSurat.js
+    app.js                  konfigurasi Express (rute, CORS, penanganan galat JSON)
+  test/                     tes unit dengan database tiruan: npm test
   database/schema.sql       struktur tabel (tanpa data), diimpor lewat phpMyAdmin
   database/migrations/      perubahan skema bernomor urut (001_..., 002_...)
   database/seed.js          data awal dan akun uji palsu (npm run seed)
+  database/templateResmi.js template surat mengikuti contoh resmi FTI (npm run template:resmi)
   uploads/letters/          surat hasil generate (PDF)
   uploads/requirements/     berkas persyaratan dari mahasiswa
   index.js  .env  package.json
@@ -209,6 +220,9 @@ Pengguna tanpa login selalu diarahkan ke halaman login. Penolakan akses memakai 
 - Mekanisme TTE sungguhan (Internal Engine atau BSrE) dan masa retensi arsip.
 - Status "S1 reguler" untuk Permohonan Penyesuaian UKT belum disimpan di database (saat ini hanya
   jenjang S1 yang diperiksa).
+- Cara akun mahasiswa sungguhan dibuat: SSO akun Unand, daftar sendiri dengan email
+  `@student.unand.ac.id`, atau impor daftar mahasiswa (CSV) oleh Staf Akademik. Saat ini akun hanya dibuat
+  lewat seed.
 
 Sudah diputuskan (24 November 2026): pemetaan status di `docs/alur-status.md` (ENUM database ke label
 antarmuka) dan penyimpanan status draf di `surat_resmi.status_draf` (migrasi 002).
@@ -217,3 +231,11 @@ Penomoran surat (25 November 2026): format nomor diatur Staf Akademik per jenis 
 `{tahun}`, `{bulan}`); nomor urut satu urutan untuk semua surat, mulai dari 1 setiap tahun (migrasi 005).
 Notifikasi saat ini hanya di dalam aplikasi; pengiriman lewat email (untuk surat selesai, disetujui,
 ditolak, atau perlu perbaikan) dikerjakan belakangan.
+Status akun mahasiswa (27 November 2026, migrasi 007): akun ditutup otomatis 30 hari setelah lulus
+(tanggal lulus terisi saat Surat Keterangan Lulus terbit, atau diisi staf) atau bila masa studi melewati
+14 semester tanpa perpanjangan (cuti). Mahasiswa yang masih aktif kuliah tidak boleh dinonaktifkan. NIM FTI 10
+digit: digit 1-2 tahun masuk, digit 3 jenjang (1 = S1), digit 4-5 fakultas (15). Rincian di `docs/data.md`.
+QR surat berisi tautan ke halaman `/verifikasi` (ALAMAT_VERIFIKASI di `server/.env`).
+Sesi dan kata sandi (27 November 2026, migrasi 008): logout dan ganti kata sandi mencabut semua token akun
+(`users.versi_token`); lupa kata sandi ditangani Staf Akademik lewat Reset Sandi di Manajemen Akun (kata sandi
+sementara wajib diganti saat login). Reset lewat email menunggu fitur pengiriman email.

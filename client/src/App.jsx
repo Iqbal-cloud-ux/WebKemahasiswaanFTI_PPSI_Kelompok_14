@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { PenjagaPeran } from './components/PenjagaPeran.jsx'
 import { useSession } from './hooks/useSession.js'
+import { GantiSandiAwalPage } from './pages/auth/GantiSandiAwalPage.jsx'
 import { LoginPage } from './pages/auth/LoginPage.jsx'
 import { TidakDitemukanPage } from './pages/galat/TidakDitemukanPage.jsx'
 import { DekanPortal } from './pages/dekan/DekanPortal.jsx'
@@ -28,6 +29,12 @@ function App() {
   const halamanAwal = !user
     ? <LoginPage sessionMessage={sessionMessage} onLogin={login} />
     : role ? <Navigate to={tujuan} replace /> : <PeranBelumTersediaPage user={user} onLogout={logout} />
+
+  // Kata sandi sementara (direset Staf Akademik) wajib diganti sebelum halaman lain dibuka.
+  // Halaman verifikasi publik tetap bisa dibuka.
+  if (user?.wajib_ganti_sandi && location.pathname !== '/verifikasi') {
+    return <GantiSandiAwalPage user={user} onLogout={logout} onSelesai={() => updateUser({ ...user, wajib_ganti_sandi: false })} />
+  }
 
   return (
     <Routes>

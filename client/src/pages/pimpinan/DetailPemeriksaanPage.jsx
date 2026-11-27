@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { AlertCircle, Check, ChevronLeft, Clock3, Eye, FileText, PenLine, Undo2, X } from 'lucide-react'
+import { PdfSematan } from '../../components/PdfSematan.jsx'
 import { PratinjauBerkas } from '../../components/PratinjauBerkas.jsx'
 import { bacaHasil, detailParafRequest, kembalikanParafRequest, pdfDrafRequest, setujuiParafRequest } from '../../services/api.js'
 import { formatTanggal, formatWaktu, statusStaf } from '../../utils/statusPengajuan.js'
@@ -17,28 +18,9 @@ const TAHAP = [
 const TAHAP_PERAN = { 'Kepala Kantor': 'pending_kakor', 'Wakil Dekan 1': 'pending_wadek1' }
 const KEPUTUSAN = { approved: 'Disetujui dan diparaf', returned: 'Dikembalikan', rejected: 'Ditolak' }
 
-// PDF draf ditampilkan langsung di halaman (diambil dengan token, lalu dari blob lokal).
-function PdfDraf({ pengajuanId }) {
-  const [state, setState] = useState({ status: 'memuat', url: '', pesan: '' })
-  useEffect(() => {
-    let aktif = true
-    let url = ''
-    pdfDrafRequest(pengajuanId)
-      .then(async (response) => {
-        if (!response.ok) throw new Error((await response.json().catch(() => null))?.message || 'PDF draf gagal dibuka.')
-        url = URL.createObjectURL(await response.blob())
-        if (aktif) setState({ status: 'siap', url, pesan: '' })
-      })
-      .catch((galat) => { if (aktif) setState({ status: 'galat', url: '', pesan: galat.message }) })
-    return () => { aktif = false; if (url) URL.revokeObjectURL(url) }
-  }, [pengajuanId])
-  if (state.status === 'memuat') return <p className="pimpinan-pdf-pesan" role="status">Memuat pratinjau surat...</p>
-  if (state.status === 'galat') return <p className="pimpinan-pdf-pesan galat" role="alert"><AlertCircle size={15} /> {state.pesan}</p>
-  return <><iframe className="pimpinan-pdf" src={state.url} title="Pratinjau draf surat" /><a className="pimpinan-pdf-link" href={state.url} target="_blank" rel="noreferrer">Buka PDF di tab baru</a></>
-}
-
-// Detail Pemeriksaan Surat (#89): pratinjau draf, ringkasan pengajuan, alur persetujuan,
-// lalu Setujui dan Paraf (dengan pop-up konfirmasi) atau Kembalikan (wajib catatan).
+// Detail Pemeriksaan Surat (#89): PDF draf langsung di kiri; di kanan kotak keputusan (Setujui dan Paraf
+// dengan pop-up konfirmasi, atau Kembalikan dengan catatan wajib), ringkasan pengajuan, dan alur persetujuan.
+// Tata letaknya sama dengan Tinjau Surat Dekan (pages/dekan/DetailKeputusanPage.jsx).
 export function DetailPemeriksaanPage({ peranLabel, onKembali }) {
   const { id } = useParams()
   const [detail, setDetail] = useState({ status: 'memuat', data: null, pesan: '' })
@@ -48,6 +30,7 @@ export function DetailPemeriksaanPage({ peranLabel, onKembali }) {
   const [error, setError] = useState('')
   const [pratinjau, setPratinjau] = useState(null)
   const tutupPratinjau = useCallback(() => setPratinjau(null), [])
+  const muatPdf = useCallback(() => pdfDrafRequest(id), [id])
 
   useEffect(() => {
     let aktif = true
@@ -108,15 +91,28 @@ export function DetailPemeriksaanPage({ peranLabel, onKembali }) {
       {!giliranSaya && <div className="staff-notice info" role="status"><span>Draf ini tidak sedang menunggu paraf {peranLabel} ({statusStaf(pengajuan.status).label}). Halaman ini hanya untuk dibaca.</span></div>}
       {error && <div className="staff-notice error" role="alert"><AlertCircle size={16} /><span>{error}</span><button type="button" className="pimpinan-tutup" onClick={() => setError('')} aria-label="Tutup pesan"><X size={15} /></button></div>}
 
-      <div className="staff-review-layout">
+      <div className="staff-review-layout pimpinan-review-layout">
         <div className="staff-review-main">
           <section className="staff-panel pimpinan-pdf-panel">
-            <h2>Pratinjau Surat</h2>
-            <PdfDraf pengajuanId={pengajuan.id} />
+            <h2>Pratinjau Draf Surat</h2>
+            <PdfSematan muat={muatPdf} judul="Pratinjau draf surat" />
           </section>
         </div>
 
         <aside className="staff-review-aside">
+          {giliranSaya && (
+            <section className="staff-panel pimpinan-keputusan pimpinan-keputusan-samping">
+              <h2>Paraf {peranLabel}</h2>
+              <label htmlFor="catatan-paraf">Catatan (wajib bila mengembalikan; opsional saat memaraf)</label>
+              <textarea id="catatan-paraf" maxLength={1000} value={catatan} onChange={(event) => setCatatan(event.target.value)} placeholder="Contoh: perbaiki penulisan keperluan pada paragraf kedua." />
+              <p>Periksa isi surat sebelum mengambil keputusan.</p>
+              <div className="pimpinan-keputusan-tombol dua">
+                <button type="button" className="staff-review-verify" disabled={sending} onClick={() => buka('setujui')}><PenLine size={13} /> Setujui dan Paraf</button>
+                <button type="button" className="staff-review-correction" disabled={sending} onClick={() => buka('kembalikan')}><Undo2 size={13} /> Kembalikan</button>
+              </div>
+            </section>
+          )}
+
           <section className="staff-panel staff-review-applicant">
             <h2>Ringkasan Pengajuan</h2>
             <div className="staff-review-applicant-grid">
@@ -166,20 +162,6 @@ export function DetailPemeriksaanPage({ peranLabel, onKembali }) {
           </section>
         </aside>
       </div>
-
-      {giliranSaya && (
-        <section className="staff-panel pimpinan-keputusan">
-          <label htmlFor="catatan-paraf">Catatan (wajib bila mengembalikan; opsional saat memaraf)</label>
-          <textarea id="catatan-paraf" maxLength={1000} value={catatan} onChange={(event) => setCatatan(event.target.value)} placeholder="Contoh: perbaiki penulisan keperluan pada paragraf kedua." />
-          <div className="staff-review-actions">
-            <p>Periksa isi surat sebelum mengambil keputusan.</p>
-            <div>
-              <button type="button" className="staff-review-correction" disabled={sending} onClick={() => buka('kembalikan')}><Undo2 size={13} /> Kembalikan</button>
-              <button type="button" className="staff-review-verify" disabled={sending} onClick={() => buka('setujui')}><PenLine size={13} /> Setujui dan Paraf</button>
-            </div>
-          </div>
-        </section>
-      )}
 
       {konfirmasi && (
         <div className="staff-editor-overlay">

@@ -7,7 +7,9 @@ Halaman Login (NIM atau email + kata sandi) [A3].
 Login berhasil: masuk ke Beranda sesuai peran [A3].
 Login gagal: tetap di Login dengan pesan kesalahan [A3].
 Pengguna belum login yang membuka halaman lain: diarahkan ke Login [A3].
-Logout mengakhiri sesi; tombol Back peramban tidak boleh membuka halaman terproteksi lagi [A3].
+Logout mengakhiri sesi; tombol Back peramban tidak boleh membuka halaman terproteksi lagi [A3]. Token dicabut di server, sehingga sesi di perangkat lain ikut berakhir; begitu juga setelah ganti kata sandi.
+Lupa kata sandi: mahasiswa menghubungi Staf Akademik, yang mereset kata sandi di Manajemen Akun dan menyampaikan kata sandi sementara secara langsung. Setelah login dengan kata sandi sementara, hanya halaman Ganti Kata Sandi yang tampil sampai kata sandi baru disimpan.
+Batas percobaan login: 5 kali gagal per akun dan IP, serta 30 kali gagal per IP, dalam 15 menit.
 Mahasiswa
 
 Menu: Beranda, Pengajuan Layanan, Riwayat Pengajuan, Notifikasi. Profil dan Keluar ada di menu akun (tombol avatar di bar atas), tidak diulang di sidebar.
@@ -28,7 +30,7 @@ Notifikasi [A3]: daftar semua pemberitahuan dengan tiga tab: Semua Notifikasi, B
 Profil [A3]: data akademik (hanya baca), ubah kontak (email, nomor telepon), ganti kata sandi.
 Staf Akademik
 
-Menu: Beranda, Daftar Pengajuan, Draft Surat, Arsip Surat, Jenis Layanan, Rekapitulasi, Profil.
+Menu: Beranda, Daftar Pengajuan, Draft Surat, Arsip Surat, Jenis Layanan, Manajemen Akun, Rekapitulasi, Profil.
 
 Beranda Staf [A3]: statistik layanan, antrean yang perlu ditindaklanjuti, aktivitas terbaru, grafik rekap per jenis layanan.
 Daftar Pengajuan [A3]: tabel seluruh pengajuan dengan pencarian dan filter status. Klik satu baris: Periksa dan Verifikasi Pengajuan [USULAN].
@@ -38,6 +40,8 @@ Buat Draf [A3]: pilih template sesuai layanan, lengkapi data variabel (nama, NIM
 Arsip Surat [A3]: surat yang sudah terbit (setelah persetujuan Dekan), dengan pencarian dan filter tanggal terbit. Klik baris: Rincian Arsip Surat (pratinjau, nomor, tombol unduh, kode verifikasi QR, ringkasan SHA-256).
 Jenis Layanan [A3]: daftar layanan (status aktif, tanggal pembaruan), tombol tambah, edit, hapus. Edit template membuka Edit Template Surat (format nomor surat dengan penanda {urut}/{tahun}/{bulan} beserta contoh hasilnya, sisipkan variabel dinamis, pratinjau, simpan). Tab Template Surat juga menampilkan nomor urut surat terakhir tahun berjalan dan form untuk mengubahnya.
 Rekapitulasi [A3]: volume pengajuan, statistik penyelesaian, grafik tren bulanan, distribusi status, dan rincian per jenis layanan. Filter tanggal, layanan, dan status diterapkan pada ringkasan serta ekspor; data laporan bersifat agregat dan tidak menampilkan identitas mahasiswa. Rata-rata penyelesaian dihitung dari tanggal pengajuan hingga tanggal surat terbit. Ekspor tersedia sebagai PDF melalui cetak peramban atau CSV yang dapat dibuka di Excel.
+Manajemen Akun (#131, `/staf/akun`): daftar semua akun dengan pencarian (nama, NIM/NIP, email), filter peran, dan filter status akun (Aktif, Lulus (masa tenggang), Lulus, Lewat masa studi, Nonaktif; dihitung otomatis, lihat status studi di docs/data.md). Kolom status juga menampilkan semester berjalan atau tanggal akun ditutup. Untuk akun mahasiswa saja: Ubah membuka formulir data (NIM FTI, nama, email, nomor telepon, program studi, tanggal lulus, perpanjangan semester); angkatan dan jenjang ditampilkan dari NIM; NIM dan email harus unik. Membuka kembali akun yang tertutup: hapus tanggal lulus atau beri perpanjangan semester. Aktifkan (dengan konfirmasi) hanya untuk akun yang dinonaktifkan manual. Reset Sandi (dengan konfirmasi) membuat kata sandi sementara yang tampil sekali untuk disampaikan ke mahasiswa. Setiap perubahan dicatat di log_aktivitas. Tidak termasuk: membuat atau menghapus akun, mengganti kata sandi orang lain, menetapkan peran, dan menonaktifkan akun manual.
+Login mahasiswa yang akunnya tertutup ditolak dengan alasannya (sudah lulus, atau masa studi lewat dan perlu perpanjangan).
 Profil [A3]: lihat dan ubah data profil.
 Kepala Kantor dan Wakil Dekan
 
@@ -50,14 +54,15 @@ Kembalikan (wajib catatan): draf kembali ke Staf Akademik untuk direvisi.
 Riwayat Pengesahan [A3]: statistik dan daftar draf yang sudah diperiksa, diparaf, atau dikembalikan.
 Dekan
 
-Menu: Beranda, Menunggu Keputusan, Riwayat Keputusan, Pengaturan TTE.
+Menu: Beranda, Menunggu Keputusan, Riwayat Keputusan, Log Aktivitas, Pengaturan TTE (#92, belum dibuat).
 
-Beranda [A3]: statistik permohonan, status penyedia TTE yang aktif, dan tabel surat menunggu keputusan.
+Beranda [A3]: statistik permohonan, status penyedia TTE yang aktif, dan tabel surat menunggu keputusan. Sudah ada (`/dekan`): menunggu keputusan, menunggu lebih dari 2 hari, keputusan bulan berjalan (disetujui, dikembalikan, ditolak), metode pengesahan yang dipakai, lima surat terlama di antrean, dan lima keputusan terakhir. Status penyedia TTE menyusul bersama Pengaturan TTE (#92). Antrean lengkap pindah ke `/dekan/antrean`.
 Menunggu Keputusan [A3]: antrean surat yang sudah diverifikasi dan diparaf lengkap. Klik baris: Tinjau Surat.
 Tinjau Surat [A3]: pratinjau surat, ringkasan pengajuan, riwayat paraf, kolom catatan, dan tiga keputusan: Setujui (pengesahan elektronik), Kembalikan (revisi), Tolak.
 Setujui: sistem membentuk hash SHA-256 dan QR, menempelkannya ke PDF final, status Selesai, menyimpan ke arsip, dan memberi notifikasi ke mahasiswa.
 Bila gagal menyematkan pengesahan, tampil pesan kesalahan dan status tidak berubah.
 Riwayat Keputusan [A3]: statistik dan daftar keputusan (disetujui, dikembalikan, ditolak).
+Log Aktivitas (`/dekan/log`; keputusan tim 27 November 2026: khusus Dekan, Kepala Kantor dan Wakil Dekan 1 tidak punya akses): log audit seluruh pengguna dari tabel log_aktivitas, terbaru lebih dulu, 25 baris per halaman, dengan pencarian (nama, NIM/NIP, keterangan) dan filter peran, jenis aktivitas, serta rentang tanggal. Hanya bisa dibaca; tidak ada tombol ubah atau hapus. Alamat IP tidak ditampilkan.
 Pengaturan TTE [A3]: pilih Internal Engine FTI atau External BSrE API, isi konfigurasi, lihat status provider aktif, informasi enkripsi, dan audit log perubahan. Kunci rahasia tidak pernah ditampilkan kembali.
 Halaman publik (tanpa login)
-Verifikasi Keaslian Surat [A3] (`/verifikasi`): pengguna menempelkan payload JSON hasil pemindaian QR; halaman mengirim nomor dan hash ke `POST /api/verifikasi` tanpa login. Menampilkan nomor, jenis, tanggal terbit, dan status hanya jika hash cocok. Bila tidak cocok atau surat tidak ditemukan, tampil "tidak dapat diverifikasi" tanpa membocorkan data pribadi. Pemeriksaan untuk surat yang ditemukan dicatat pada `public_verification`.
+Verifikasi Keaslian Surat [A3] (`/verifikasi`): pengguna memindai QR surat dengan kamera HP; QR berisi tautan `/verifikasi?nomor=...&hash=...` sehingga halaman langsung memeriksa surat tanpa langkah tambahan. Pengguna juga bisa menempelkan tautan itu, atau payload JSON dari surat lama, di kotak isian. Halaman mengirim nomor dan hash ke `POST /api/verifikasi` tanpa login. Menampilkan nomor, jenis, tanggal terbit, dan status hanya jika hash cocok. Bila tidak cocok atau surat tidak ditemukan, tampil "tidak dapat diverifikasi" tanpa membocorkan data pribadi. Pemeriksaan untuk surat yang ditemukan dicatat pada `public_verification`.

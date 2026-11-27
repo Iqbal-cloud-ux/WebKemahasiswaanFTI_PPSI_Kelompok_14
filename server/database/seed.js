@@ -125,11 +125,15 @@ const PENUNJUKAN_TTD = {
   'UNDUR-DIRI': ['wadek1', 'a.n. Dekan'],
 };
 
-// Akun uji (palsu). NIM/NIP berawalan 99 agar tidak sama dengan nomor asli.
+// Akun uji (palsu). NIP berawalan 99 agar tidak sama dengan nomor asli.
+// NIM mengikuti struktur NIM FTI (utils/nim.js: tahun masuk, 1 = S1, 15 = FTI) dengan nomor urut 99xxx yang palsu;
+// angkatan harus sama dengan dua digit pertama NIM.
 const AKUN = [
-  { identifier: '9900000001', nama: 'Mahasiswa Uji Satu', email: 'mahasiswa1@contoh.test', role: 'mahasiswa', prodi: 'Sistem Informasi', jenjang: 'S1', angkatan: 2023, no_hp: '080000000001', is_active: 1 },
-  { identifier: '9900000002', nama: 'Mahasiswa Uji Dua', email: 'mahasiswa2@contoh.test', role: 'mahasiswa', prodi: 'Teknik Komputer', jenjang: 'S1', angkatan: 2026, no_hp: '080000000002', is_active: 1 },
-  { identifier: '9900000003', nama: 'Mahasiswa Uji Nonaktif', email: 'mahasiswa3@contoh.test', role: 'mahasiswa', prodi: 'Informatika', jenjang: 'S1', angkatan: 2022, no_hp: '080000000003', is_active: 0 },
+  { identifier: '2311599001', nama: 'Mahasiswa Uji Satu', email: 'mahasiswa1@contoh.test', role: 'mahasiswa', prodi: 'Sistem Informasi', jenjang: 'S1', angkatan: 2023, no_hp: '080000000001', is_active: 1 },
+  { identifier: '2611599002', nama: 'Mahasiswa Uji Dua', email: 'mahasiswa2@contoh.test', role: 'mahasiswa', prodi: 'Teknik Komputer', jenjang: 'S1', angkatan: 2026, no_hp: '080000000002', is_active: 1 },
+  { identifier: '2211599003', nama: 'Mahasiswa Uji Nonaktif', email: 'mahasiswa3@contoh.test', role: 'mahasiswa', prodi: 'Informatika', jenjang: 'S1', angkatan: 2022, no_hp: '080000000003', is_active: 0 },
+  // Angkatan 2018 sudah melewati 14 semester: login ditolak sampai staf memberi perpanjangan (migrasi 007).
+  { identifier: '1811599004', nama: 'Mahasiswa Uji Lewat Masa Studi', email: 'mahasiswa4@contoh.test', role: 'mahasiswa', prodi: 'Sistem Informasi', jenjang: 'S1', angkatan: 2018, no_hp: '080000000004', is_active: 1 },
   { identifier: '990000000000000001', nama: 'Staf Akademik Uji', email: 'staf@contoh.test', role: 'staf', is_active: 1 },
   { identifier: '990000000000000005', nama: 'Staf Akademik Uji Pintasan', email: 'staf-pintasan@contoh.test', role: 'staf', is_active: 1 },
   { identifier: '990000000000000002', nama: 'Kepala Kantor Uji', email: 'kakor@contoh.test', role: 'kakor', is_active: 1 },

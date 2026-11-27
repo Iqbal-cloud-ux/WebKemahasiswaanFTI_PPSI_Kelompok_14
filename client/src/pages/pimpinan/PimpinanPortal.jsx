@@ -11,10 +11,17 @@ import { DetailPemeriksaanPage } from './DetailPemeriksaanPage.jsx'
 import { RiwayatPengesahanPage } from './RiwayatPengesahanPage.jsx'
 
 // Menu pimpinan (docs/alur-layar.md): Draft Menunggu Pemeriksaan, Riwayat Pengesahan.
+// Log Aktivitas hanya untuk Dekan (keputusan tim 27 November 2026).
 const NAVIGASI = [
   { kunci: 'antrean', label: 'Draft Menunggu Pemeriksaan', icon: ClipboardCheck, path: '' },
   { kunci: 'riwayat', label: 'Riwayat Pengesahan', icon: History, path: '/riwayat' },
 ]
+
+const halamanAktif = (sisa) => {
+  if (sisa === '/profil') return 'profil'
+  if (sisa.startsWith('/riwayat')) return 'riwayat'
+  return 'antrean'
+}
 
 // Portal Kepala Kantor (/kepala-kantor) dan Wakil Dekan 1 (/wakil-dekan) (#89).
 // Kedua peran memakai halaman yang sama; server yang menentukan tahap paraf masing-masing.
@@ -28,7 +35,7 @@ export function PimpinanPortal({ user, onUpdateUser, onLogout }) {
   const nama = user.nama || peranLabel
 
   const sisa = location.pathname.replace(base, '').replace(/\/+$/, '')
-  const activePage = sisa === '/profil' ? 'profil' : sisa.startsWith('/riwayat') ? 'riwayat' : 'antrean'
+  const activePage = halamanAktif(sisa)
 
   const openPage = (kunci) => {
     setSidebarOpen(false)
@@ -52,8 +59,7 @@ export function PimpinanPortal({ user, onUpdateUser, onLogout }) {
         <Routes>
           <Route index element={<AntreanParafPage peranLabel={peranLabel} onPeriksa={(id) => navigate(`${base}/periksa/${id}`)} pesan={location.state?.pesan} />} />
           <Route path="periksa/:id" element={<DetailPemeriksaanPage peranLabel={peranLabel} onKembali={(pesan) => navigate(base, { state: pesan ? { pesan } : undefined })} />} />
-          <Route path="riwayat" element={<RiwayatPengesahanPage onPeriksa={(id) => navigate(`${base}/periksa/${id}`)} />} />
-          <Route path="profil" element={<ProfilStafPage user={user} staffName={nama} initials={initials} onUpdateUser={onUpdateUser} />} />
+          <Route path="riwayat" element={<RiwayatPengesahanPage onPeriksa={(id) => navigate(`${base}/periksa/${id}`)} />} />          <Route path="profil" element={<ProfilStafPage user={user} staffName={nama} initials={initials} onUpdateUser={onUpdateUser} />} />
           <Route path="*" element={<TidakDitemukanPage dalamPortal beranda={base} />} />
         </Routes>
       </ErrorBoundary>

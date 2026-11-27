@@ -3,7 +3,9 @@ const test = require('node:test');
 const crypto = require('node:crypto');
 const { PDFDocument, PDFDict, PDFName } = require('pdf-lib');
 const QRCode = require('qrcode');
-const { buatKodeVerifikasi, tempelLembarVerifikasi } = require('../src/services/pengesahanPdfService');
+const {
+  alamatVerifikasi, tautanVerifikasi, buatKodeVerifikasi, tempelLembarVerifikasi,
+} = require('../src/services/pengesahanPdfService');
 const { buatPdfSurat } = require('../src/services/pdfService');
 
 const HASH = 'a'.repeat(64);
@@ -24,6 +26,28 @@ test('menghasilkan sidik jari PDF dan QR yang valid', async () => {
 
   assert.equal(hashSha256, crypto.createHash('sha256').update(pdfSumber).digest('hex'));
   assert.equal(qrPng.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+});
+
+test('QR memuat tautan verifikasi dengan nomor dan hash yang terbaca kembali', () => {
+  const tautan = tautanVerifikasi('B/12/UN.16.15/KM.00.00/2026', HASH, 'http://192.168.1.10:5173');
+  const url = new URL(tautan);
+
+  assert.equal(`${url.origin}${url.pathname}`, 'http://192.168.1.10:5173/verifikasi');
+  assert.equal(url.searchParams.get('nomor'), 'B/12/UN.16.15/KM.00.00/2026');
+  assert.equal(url.searchParams.get('hash'), HASH);
+});
+
+test('alamat verifikasi memakai bawaan localhost dan membuang garis miring di akhir', () => {
+  assert.equal(alamatVerifikasi(''), 'http://localhost:5173');
+  assert.equal(alamatVerifikasi(undefined), 'http://localhost:5173');
+  assert.equal(alamatVerifikasi(' https://layanan.contoh.test/ '), 'https://layanan.contoh.test');
+  assert.equal(alamatVerifikasi('https://contoh.test/portal/'), 'https://contoh.test/portal');
+});
+
+test('alamat verifikasi menolak nilai yang bukan alamat http atau https', () => {
+  assert.throws(() => alamatVerifikasi('localhost:5173'), /ALAMAT_VERIFIKASI/);
+  assert.throws(() => alamatVerifikasi('bukan alamat'), /ALAMAT_VERIFIKASI/);
+  assert.throws(() => alamatVerifikasi('ftp://contoh.test'), /http:\/\/ atau https:\/\//);
 });
 
 test('menempelkan QR pada PDF surat template sebelum diterbitkan', async () => {

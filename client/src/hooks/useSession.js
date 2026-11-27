@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { logoutRequest, refreshRequest, sessionCheckRequest } from '../services/api.js'
+import { PERISTIWA_SESI_DITOLAK, logoutRequest, refreshRequest, sessionCheckRequest } from '../services/api.js'
 
 // Sesi berakhir setelah 30 menit tanpa aktivitas (docs). Token server juga berlaku 30 menit
 // dan diperpanjang paling sering tiap 5 menit selama pengguna aktif.
 const SESSION_IDLE_MS = 30 * 60 * 1000
 const SESSION_REFRESH_MS = 5 * 60 * 1000
 const ACTIVITY_EVENTS = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart']
+
+// Pesan dari server saat sesi ditolak (misalnya akun ditutup karena lulus atau lewat masa studi);
+// bila tidak ada, pesan umum sesi berakhir.
+const pesanSesiBerakhir = async (response) => {
+  const hasil = await response.json().catch(() => null)
+  return hasil?.message || 'Sesi Anda sudah berakhir. Silakan masuk kembali.'
+}
 
 const loadStoredUser = () => {
   try {
@@ -31,17 +38,44 @@ export function useSession() {
     setUser(null)
   }, [])
 
-  // Periksa sesi ke server saat halaman dibuka. Bila token tidak berlaku lagi (401), keluarkan pengguna.
-  useEffect(() => {
-    if (!isLoggedIn) return undefined
-    let active = true
+  // Tanya server apakah token masih berlaku. Bila ditolak (401, misalnya sesudah logout di perangkat lain
+  // atau kata sandi diganti), keluarkan pengguna beserta alasan dari server.
+  const periksaSesi = useCallback(() => {
     sessionCheckRequest()
-      .then((response) => {
-        if (active && response.status === 401) endSession('Sesi Anda sudah berakhir. Silakan masuk kembali.')
+      .then(async (response) => {
+        if (response.status === 401) endSession(await pesanSesiBerakhir(response))
       })
       .catch(() => {})
-    return () => { active = false }
+  }, [endSession])
+
+  // Periksa sesi saat halaman dibuka.
+  useEffect(() => {
+    if (isLoggedIn) periksaSesi()
+  }, [isLoggedIn, periksaSesi])
+
+  // Permintaan data apa pun yang ditolak 401 (services/api.js, bacaHasil) langsung mengakhiri sesi.
+  useEffect(() => {
+    if (!isLoggedIn) return undefined
+    const saatDitolak = (event) => endSession(event.detail || 'Sesi Anda sudah berakhir. Silakan masuk kembali.')
+    window.addEventListener(PERISTIWA_SESI_DITOLAK, saatDitolak)
+    return () => window.removeEventListener(PERISTIWA_SESI_DITOLAK, saatDitolak)
   }, [isLoggedIn, endSession])
+
+  // Tab lain di peramban yang sama memakai localStorage yang sama: ikuti logout atau login di tab itu.
+  useEffect(() => {
+    const saatStorage = (event) => {
+      if (event.key !== null && event.key !== 'user') return
+      const tersimpan = loadStoredUser()
+      if (tersimpan) {
+        setUser(tersimpan)
+      } else if (isLoggedIn) {
+        setSessionMessage('Anda sudah keluar di tab atau jendela lain. Silakan masuk kembali.')
+        setUser(null)
+      }
+    }
+    window.addEventListener('storage', saatStorage)
+    return () => window.removeEventListener('storage', saatStorage)
+  }, [isLoggedIn])
 
   // Selama pengguna aktif, perpanjang token. Setelah 30 menit tanpa aktivitas, keluar otomatis.
   const lastActivityRef = useRef(0)
@@ -56,7 +90,7 @@ export function useSession() {
       refreshRequest()
         .then(async (response) => {
           if (response.status === 401) {
-            endSession('Sesi Anda sudah berakhir. Silakan masuk kembali.')
+            endSession(await pesanSesiBerakhir(response))
             return
           }
           const result = await response.json().catch(() => null)
@@ -71,9 +105,13 @@ export function useSession() {
       if (now - lastRefreshRef.current >= SESSION_REFRESH_MS) refreshSession()
     }
 
+    // Tiap menit: keluar bila 30 menit tidak aktif; selain itu tanya server apakah sesi masih berlaku,
+    // agar logout atau ganti kata sandi di perangkat lain terasa paling lama satu menit kemudian.
     const idleTimer = window.setInterval(() => {
       if (Date.now() - lastActivityRef.current >= SESSION_IDLE_MS) {
         endSession('Sesi berakhir karena tidak ada aktivitas selama 30 menit. Silakan masuk kembali.')
+      } else {
+        periksaSesi()
       }
     }, 60 * 1000)
 
@@ -82,7 +120,7 @@ export function useSession() {
       window.clearInterval(idleTimer)
       ACTIVITY_EVENTS.forEach((name) => window.removeEventListener(name, handleActivity))
     }
-  }, [isLoggedIn, endSession])
+  }, [isLoggedIn, endSession, periksaSesi])
 
   // Dipanggil halaman Login setelah server menerima NIM/email dan kata sandi.
   const login = (token, profile) => {

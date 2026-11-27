@@ -28,7 +28,9 @@ const bacaBerkasTerbit = async (filePath, ekstensi, label) => {
   return fs.promises.readFile(lokasi);
 };
 
-const ambilSuratTerbit = async (pengajuanId) => {
+// aktor (opsional): bila mahasiswa, kepemilikan diperiksa SEBELUM status surat, agar mahasiswa lain
+// tidak bisa mengetahui status pengajuan orang lain dari pesan "belum diterbitkan".
+const ambilSuratTerbit = async (pengajuanId, aktor = null) => {
   const [[row]] = await db.query(
     `SELECT p.no_referensi, p.mahasiswa_id, p.status, s.status_draf, s.no_surat,
        s.file_pdf_path, s.qr_code_path, s.hash_sha256, s.tgl_terbit,
@@ -41,6 +43,9 @@ const ambilSuratTerbit = async (pengajuanId) => {
     [pengajuanId]
   );
   if (!row) throw new GalatAplikasi('Pengajuan tidak ditemukan', 404);
+  if (aktor?.role === 'mahasiswa' && Number(row.mahasiswa_id) !== Number(aktor.id)) {
+    throw new GalatAplikasi('Anda tidak berhak mengunduh surat ini', 403);
+  }
   if (row.status !== 'disetujui' || row.status_draf !== 'terbit') {
     throw new GalatAplikasi('Surat belum diterbitkan oleh Dekan', 409);
   }
@@ -94,11 +99,7 @@ const qrSuratTerbit = async (pengajuanId, aktor, ipAddress) => {
 };
 
 const suratTerbit = async (pengajuanId, aktor, ipAddress, pratinjau = false) => {
-  const row = await ambilSuratTerbit(pengajuanId);
-  if (aktor.role === 'mahasiswa' && Number(row.mahasiswa_id) !== Number(aktor.id)) {
-    throw new GalatAplikasi('Anda tidak berhak mengunduh surat ini', 403);
-  }
-
+  const row = await ambilSuratTerbit(pengajuanId, aktor);
   if (!row.file_pdf_path) throw new GalatAplikasi('Surat belum diterbitkan oleh Dekan', 409);
   const pdf = await bacaBerkasTerbit(row.file_pdf_path, '.pdf', 'PDF surat');
   await LogAktivitas.create({

@@ -7,7 +7,8 @@
   "start": "node index.js",
   "dev": "nodemon index.js",
   "seed": "node database/seed.js",
-  "template:resmi": "node database/perbaruiTemplateResmi.js"
+  "template:resmi": "node database/perbaruiTemplateResmi.js",
+  "test": "node --test \"test/*.test.js\""
 },
   "keywords": [],
   "author": "",

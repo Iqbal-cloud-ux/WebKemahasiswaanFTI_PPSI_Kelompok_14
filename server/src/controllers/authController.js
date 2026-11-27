@@ -1,23 +1,15 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const { catatAktivitas } = require('../models/logModel');
 const { catatLoginGagal, resetLoginGagal } = require('../middlewares/loginLimiter');
 const { sendSuccess, sendError } = require('../utils/responseHandler');
-
-// Sesi berakhir bila tidak aktif (usulan docs: 30 menit). Selama pengguna aktif,
-// client memperpanjang token lewat POST /api/auth/refresh.
-const MASA_SESI = process.env.JWT_EXPIRES_IN || '30m';
+const { statusStudi } = require('../utils/statusStudi');
+const { buatToken } = require('../utils/token');
 
 // Hash tiruan agar waktu respons sama saat akun tidak ditemukan (mencegah tebakan lewat waktu).
 const HASH_TIRUAN = bcrypt.hashSync('hash-tiruan-untuk-penyamaan-waktu', 10);
 
-const buatToken = (user) => jwt.sign(
-  { id: user.id, identifier: user.identifier, nama: user.nama, role: user.role },
-  process.env.JWT_SECRET,
-  { expiresIn: MASA_SESI }
-);
-
+// wajib_ganti_sandi (migrasi 008): client menampilkan halaman ganti kata sandi sebelum halaman lain.
 const createUserData = (user) => ({
   id: user.id,
   identifier: user.identifier,
@@ -29,6 +21,7 @@ const createUserData = (user) => ({
   angkatan: user.angkatan ?? null,
   no_hp: user.no_hp,
   foto_profil: user.foto_profil ?? null,
+  wajib_ganti_sandi: Number(user.wajib_ganti_sandi || 0) === 1,
   token: buatToken(user)
 });
 
@@ -60,9 +53,11 @@ const login = async (req, res) => {
     resetLoginGagal(req);
 
     // Pesan khusus baru ditampilkan setelah kata sandi benar, agar status akun tidak bocor ke orang lain.
-    if (Number(user.is_active) === 0) {
-      await catatAktivitas({ userId: user.id, action: 'login_ditolak', description: 'Login ditolak: akun nonaktif', ipAddress: req.ip });
-      return sendError(res, 'Akun Anda dinonaktifkan. Hubungi Staf Akademik untuk mengaktifkannya kembali', 403);
+    // Akun nonaktif, mahasiswa yang sudah lulus (lewat masa tenggang), atau lewat masa studi (utils/statusStudi.js).
+    const status = statusStudi(user);
+    if (!status.bolehLogin) {
+      await catatAktivitas({ userId: user.id, action: 'login_ditolak', description: `Login ditolak: ${status.label.toLowerCase()}`, ipAddress: req.ip });
+      return sendError(res, status.pesan, 403);
     }
 
     await catatAktivitas({ userId: user.id, action: 'login', description: 'Login berhasil', ipAddress: req.ip });
@@ -81,9 +76,8 @@ const refresh = async (req, res) => {
     if (!user) {
       return sendError(res, 'Akun tidak ditemukan. Silakan masuk kembali', 401);
     }
-    if (Number(user.is_active) === 0) {
-      return sendError(res, 'Akun Anda dinonaktifkan. Silakan hubungi Staf Akademik', 401);
-    }
+    const status = statusStudi(user);
+    if (!status.bolehLogin) return sendError(res, status.pesan, 401);
     return sendSuccess(res, 'Sesi diperpanjang', { token: buatToken(user) });
   } catch (error) {
     console.error('Error Refresh Sesi:', error);
@@ -91,8 +85,14 @@ const refresh = async (req, res) => {
   }
 };
 
-// JWT tidak disimpan di server, jadi logout cukup dicatat; client menghapus tokennya.
+// Logout menaikkan versi token akun (migrasi 008), sehingga token yang sudah terbit, termasuk di
+// perangkat lain, langsung tidak berlaku. Client juga menghapus tokennya.
 const logout = async (req, res) => {
+  try {
+    await User.naikkanVersiToken(req.user.id);
+  } catch (error) {
+    console.error('Error Cabut Token Logout:', error.message);
+  }
   await catatAktivitas({ userId: req.user.id, action: 'logout', description: 'Logout', ipAddress: req.ip });
   return sendSuccess(res, 'Logout berhasil');
 };
@@ -119,7 +119,8 @@ const loginUji = async (req, res) => {
     if (!user || user.role !== req.body.role || !user.email.endsWith('@contoh.test')) {
       return sendError(res, `Akun uji ${email} belum ada. Jalankan "npm run seed" di folder server`, 404);
     }
-    if (Number(user.is_active) === 0) return sendError(res, 'Akun uji ini nonaktif', 403);
+    const status = statusStudi(user);
+    if (!status.bolehLogin) return sendError(res, `Akun uji ini tidak bisa dipakai. ${status.pesan}`, 403);
     await catatAktivitas({ userId: user.id, action: 'login_uji', description: 'Login pintasan pengujian (tanpa kata sandi)', ipAddress: req.ip });
     return sendSuccess(res, 'Login uji berhasil', createUserData(user));
   } catch (error) {

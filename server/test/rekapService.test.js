@@ -115,3 +115,19 @@ test('ekspor CSV mencatat aktivitas dan tidak memuat data pribadi mahasiswa', as
     ipAddress: '127.0.0.1',
   }]);
 });
+
+test('ekspor CSV menetralkan teks yang bisa dibaca Excel sebagai rumus', async () => {
+  siapkanQueryLaporan([]);
+  const queryAsli = db.query;
+  db.query = async (sql, params) => {
+    const hasil = await queryAsli(sql, params);
+    if (sql.includes('FROM jenis_layanan j')) hasil[0][0].nama_layanan = '=HYPERLINK("http://contoh.test","Klik")';
+    return hasil;
+  };
+
+  const isi = (await eksporCsv({}, { id: 7, role: 'staf' }, '127.0.0.1')).buffer.toString('utf8');
+
+  assert.match(isi, /"'=HYPERLINK\(""http:\/\/contoh\.test"",""Klik""\)"/);
+  assert.doesNotMatch(isi, /(^|,)"=HYPERLINK/m);
+  assert.match(isi, /"Total pengajuan","12"/);
+});

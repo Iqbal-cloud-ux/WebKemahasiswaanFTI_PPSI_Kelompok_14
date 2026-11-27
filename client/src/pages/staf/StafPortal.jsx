@@ -11,6 +11,7 @@ import { BerandaStafPage } from './BerandaStafPage.jsx'
 import { DaftarPengajuanPage } from './DaftarPengajuanPage.jsx'
 import { DrafSuratPage } from './DrafSuratPage.jsx'
 import { LayananTemplatePage } from './LayananTemplatePage.jsx'
+import { ManajemenAkunPage } from './ManajemenAkunPage.jsx'
 import { PeriksaPengajuanPage } from './PeriksaPengajuanPage.jsx'
 import { ProfilStafPage } from './ProfilStafPage.jsx'
 import { RekapPage } from './RekapPage.jsx'
@@ -23,6 +24,7 @@ const PAGE_PATHS = {
   'Draf Surat': '/staf/draf-surat',
   'Arsip Surat': '/staf/arsip-surat',
   'Jenis Layanan & Template': '/staf/layanan-template',
+  'Manajemen Akun': '/staf/akun',
   'Rekapitulasi & Laporan': '/staf/rekap',
   Profil: '/staf/profil',
 }
@@ -115,6 +117,7 @@ export function StafPortal({ user, onUpdateUser, onLogout }) {
               <Route path="draf-surat" element={<DrafSuratPage />} />
               <Route path="arsip-surat" element={<ArsipSuratPage />} />
               <Route path="layanan-template" element={<LayananTemplatePage />} />
+              <Route path="akun" element={<ManajemenAkunPage />} />
               <Route path="rekap" element={<RekapPage />} />
               <Route path="profil" element={<ProfilStafPage user={user} staffName={staffName} initials={initials} onUpdateUser={onUpdateUser} />} />
               <Route path="*" element={<TidakDitemukanPage dalamPortal beranda={PAGE_PATHS.Beranda} />} />

@@ -653,3 +653,21 @@ img.staff-profile-avatar { display: block; object-fit: cover; }
 .staff-nomor-urut label { color: #344252; font-size: 9px; font-weight: 600; }
 .staff-nomor-urut input { width: 100%; height: 32px; padding: 0 8px; border: 1px solid #dfe7ec; border-radius: 5px; font: inherit; font-size: 10px; }
 @media (max-width: 640px) { .staff-nomor-urut { grid-template-columns: 1fr; } }
+
+/* Manajemen Data dan Akun (#131) */
+.staff-akun-form-panel { margin-top: 17px; }
+.staff-akun-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.staff-akun-form-grid select { width: 100%; height: 40px; padding: 0 9px; border: 1px solid #dfe7ec; border-radius: 5px; color: #526170; background: #fff; font-size: 10px; }
+.staff-akun-form-grid select:focus { border-color: #55a979; box-shadow: 0 0 0 2px #e6f5eb; outline: none; }
+.staff-akun-catatan { margin: 12px 0 0; color: #64727e; font-size: 9px; line-height: 1.5; }
+.staff-akun-aksi { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 14px; }
+.staff-akun-tombol { display: inline-flex; gap: 12px; }
+.staff-akun-ubah svg { transform: none; }
+.staff-akun-ubah:disabled { opacity: .5; cursor: not-allowed; }
+.staff-notice .staff-akun-tutup { display: grid; place-items: center; margin-left: auto; padding: 0; border: 0; color: inherit; background: transparent; cursor: pointer; }
+.staff-akun-halaman { color: #526170; font-size: 9px; }
+.staff-akun-keterangan { display: block; margin-top: 4px; color: #75828c; font-size: 8px; }
+.staff-akun-sandi { border-color: #f1e0a9; background: #fffbed; }
+.staff-akun-sandi h2 svg { vertical-align: -2px; margin-right: 4px; }
+.staff-akun-sandi-teks { display: inline-block; padding: 8px 14px; border: 1px dashed #a57912; border-radius: 5px; color: #172033; background: #fff; font-size: 16px; letter-spacing: 1px; user-select: all; }
+.staff-activity-check.perhatian { color: #b9651b; background: #fff7eb; }

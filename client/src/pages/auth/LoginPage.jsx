@@ -127,7 +127,7 @@ export function LoginPage({ sessionMessage, onLogin }) {
             </div>
           </div>
         )}
-        <button type="button" className="forgot-button" onClick={() => setNotice({ type: 'info', message: 'Silakan hubungi Staf Akademik untuk mereset kata sandi.' })}>Lupa kata sandi?</button>
+        <button type="button" className="forgot-button" onClick={() => setNotice({ type: 'info', message: 'Hubungi Staf Akademik untuk mereset kata sandi. Anda akan menerima kata sandi sementara yang wajib diganti saat masuk.' })}>Lupa kata sandi?</button>
       </section>
       <p className="help-text">Gunakan NIM/NIP atau email akun Anda. Dashboard akan ditentukan oleh peran yang terdaftar.</p>
       <footer>Fakultas Teknologi Informasi, Universitas Andalas<br /><span>© 2026 - Seluruh hak cipta dilindungi.</span></footer>

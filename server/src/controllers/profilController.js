@@ -3,6 +3,7 @@ const User = require('../models/userModel');
 const { catatAktivitas } = require('../models/logModel');
 const { sendSuccess, sendError } = require('../utils/responseHandler');
 const { tanganiGalat } = require('../utils/galat');
+const { buatToken } = require('../utils/token');
 
 const POLA_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const POLA_NO_HP = /^\+?[0-9][0-9 -]{7,18}$/;
@@ -87,7 +88,8 @@ const ubahKataSandi = async (req, res) => {
 
     await User.ubahPassword(user.id, await bcrypt.hash(baru, 10));
     await catatAktivitas({ userId: user.id, action: 'ubah_kata_sandi', description: 'Kata sandi diubah', ipAddress: req.ip });
-    return sendSuccess(res, 'Kata sandi berhasil diubah');
+    // Ganti kata sandi mencabut semua token lama (termasuk di perangkat lain); perangkat ini memakai token baru.
+    return sendSuccess(res, 'Kata sandi berhasil diubah', { token: buatToken(await User.findById(user.id)) });
   } catch (error) {
     return tanganiGalat(res, error, 'Ubah Kata Sandi');
   }

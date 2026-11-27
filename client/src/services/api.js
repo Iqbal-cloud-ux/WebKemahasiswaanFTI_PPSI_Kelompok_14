@@ -24,10 +24,17 @@ export const sessionCheckRequest = () => fetch('/api/auth/me', { headers: authHe
 
 export const checkStaffAccess = () => fetch('/api/auth/khusus-staf', { headers: authHeader() })
 
+// Nama peristiwa window saat server menolak sesi (401). hooks/useSession.js mendengarnya lalu mengakhiri sesi.
+export const PERISTIWA_SESI_DITOLAK = 'sesi-ditolak'
+
 // Membaca respons JSON server. Bila gagal, melempar Error berisi pesan dari server
 // (status HTTP di error.status, rincian di error.rincian) agar halaman bisa menampilkannya.
+// Respons 401 juga mengakhiri sesi di semua halaman lewat PERISTIWA_SESI_DITOLAK.
 export const bacaHasil = async (response) => {
   const hasil = await response.json().catch(() => null)
+  if (response.status === 401) {
+    window.dispatchEvent(new CustomEvent(PERISTIWA_SESI_DITOLAK, { detail: hasil?.message || null }))
+  }
   if (!response.ok || !hasil?.success) {
     const galat = new Error(response.status === 401
       ? 'Sesi Anda sudah berakhir. Silakan masuk kembali.'
@@ -65,6 +72,12 @@ const kirimJson = (url, method, data) => fetch(url, {
 export const ubahKontakRequest = ({ email, no_hp }) => kirimJson('/api/profil', 'PATCH', { email, no_hp })
 
 export const ubahKataSandiRequest = ({ kata_sandi_lama, kata_sandi_baru }) => kirimJson('/api/profil/kata-sandi', 'PUT', { kata_sandi_lama, kata_sandi_baru })
+
+// Ganti kata sandi mencabut semua token lama di server; simpan token baru dari respons agar sesi ini tetap berjalan.
+export const simpanTokenBaru = (data) => {
+  if (data?.token) localStorage.setItem('token', data.token)
+  return data
+}
 
 export const ubahFotoProfilRequest = (foto_profil) => kirimJson('/api/profil/foto', 'PUT', { foto_profil })
 
@@ -165,6 +178,28 @@ const parameterRekap = ({ mulai, sampai, jenisLayananId, status } = {}) => {
 export const rekapRequest = (filter) => fetch(`/api/rekap?${parameterRekap(filter)}`, { headers: authHeader() })
 
 export const eksporRekapCsvRequest = (filter) => fetch(`/api/rekap/ekspor?format=csv&${parameterRekap(filter)}`, { headers: authHeader() })
+
+// Staf: perpindahan status pengajuan terbaru untuk "Aktivitas Terbaru" di Beranda Staf.
+export const aktivitasStafRequest = () => fetch('/api/pengajuan/aktivitas?jumlah=6', { headers: authHeader() })
+
+// Dekan: log aktivitas seluruh sistem, hanya baca.
+// filter = { cari, peran, aksi, mulai, sampai, halaman }. Hasil: { log, total, halaman, per_halaman, daftar_aksi }.
+export const logAktivitasRequest = (filter = {}) => {
+  const params = new URLSearchParams()
+  Object.entries(filter).forEach(([kunci, nilai]) => { if (nilai) params.set(kunci, nilai) })
+  return fetch(`/api/log?${params.toString()}`, { headers: authHeader() })
+}
+
+// Staf: Manajemen Data dan Akun (#131). Data hanya bisa diubah dan diaktifkan untuk akun mahasiswa.
+export const daftarAkunRequest = () => fetch('/api/akun', { headers: authHeader() })
+
+// data = { identifier, nama, email, no_hp, prodi, jenjang, angkatan }
+export const ubahAkunRequest = (id, data) => kirimJson(`/api/akun/${encodeURIComponent(id)}`, 'PUT', data)
+
+export const aktifkanAkunRequest = (id) => fetch(`/api/akun/${encodeURIComponent(id)}/aktifkan`, { method: 'PATCH', headers: authHeader() })
+
+// Hasil: { akun, kata_sandi_sementara }. Kata sandi sementara hanya ada di respons ini.
+export const resetSandiAkunRequest = (id) => fetch(`/api/akun/${encodeURIComponent(id)}/reset-sandi`, { method: 'POST', headers: authHeader() })
 
 // Verifikasi keaslian surat dapat digunakan publik tanpa token login.
 export const verifikasiSuratRequest = (payload) => fetch('/api/verifikasi', {

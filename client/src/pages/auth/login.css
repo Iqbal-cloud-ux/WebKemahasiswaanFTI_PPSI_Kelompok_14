@@ -32,3 +32,9 @@
 .login-uji button { padding: 6px 4px; border: 1px solid #e0b84f; border-radius: 4px; color: #6b4e0c; background: #fff; font-size: 7px; cursor: pointer; }
 .login-uji button:hover { background: #fff3cf; }
 .login-uji button:disabled { opacity: .6; cursor: wait; }
+
+/* Ganti kata sandi sementara (GantiSandiAwalPage.jsx) */
+.login-heading h1 svg { vertical-align: -3px; margin-right: 4px; }
+.sandi-syarat { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px 12px; margin: 4px 0 14px; padding: 0; list-style: none; color: #a52e32; font-size: 11px; }
+.sandi-syarat li { display: flex; align-items: center; gap: 5px; }
+.sandi-syarat li.terpenuhi { color: #126d3a; }

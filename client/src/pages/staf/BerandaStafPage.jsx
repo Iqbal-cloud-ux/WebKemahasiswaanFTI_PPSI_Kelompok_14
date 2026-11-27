@@ -1,9 +1,20 @@
-import { AlertCircle, Check, FileText, LogOut, Send } from 'lucide-react'
-import { staffActivities } from '../../data/contohStaf.js'
-import { hariSejak, keBarisStaf } from '../../utils/statusPengajuan.js'
+import { AlertCircle, Check, FileText, LogOut, Send, Undo2 } from 'lucide-react'
+import { useDataServer } from '../../hooks/useDataServer.js'
+import { aktivitasStafRequest } from '../../services/api.js'
+import { formatWaktu, hariSejak, keBarisStaf } from '../../utils/statusPengajuan.js'
 
 const JUMLAH_ANTREAN = 5
 const BATAS_TUNGGU_HARI = 2
+
+// "baru saja", "12 menit lalu", "3 jam lalu"; lebih dari sehari memakai tanggal dan jam.
+const waktuRelatif = (nilai) => {
+  const menit = Math.floor((Date.now() - new Date(nilai).getTime()) / 60000)
+  if (Number.isNaN(menit)) return '-'
+  if (menit < 1) return 'baru saja'
+  if (menit < 60) return `${menit} menit lalu`
+  if (menit < 24 * 60) return `${Math.floor(menit / 60)} jam lalu`
+  return formatWaktu(nilai)
+}
 
 const hariIni = () => new Date().toDateString()
 const bulanIni = (nilai) => {
@@ -14,8 +25,9 @@ const bulanIni = (nilai) => {
 
 // Beranda staf. Judul dan breadcrumb-nya dirender oleh StafPortal.
 // pengajuan = { status, data, pesan } dari StafPortal (GET /api/pengajuan).
-// Aktivitas Terbaru masih data contoh sampai rekap dan log tersambung (#102, #103).
+// Aktivitas Terbaru = perpindahan status pengajuan terakhir dari server (GET /api/pengajuan/aktivitas).
 export function BerandaStafPage({ pengajuan, onReview }) {
+  const [aktivitas] = useDataServer(aktivitasStafRequest)
   const rows = pengajuan.data.map((item) => ({ ...keBarisStaf(item), updatedAt: item.updated_at }))
   const siap = pengajuan.status === 'siap'
   const hitung = (cek) => (siap ? rows.filter(cek).length : '-')
@@ -68,13 +80,17 @@ export function BerandaStafPage({ pengajuan, onReview }) {
 
       <div className="staff-lower-grid">
         <section className="staff-panel staff-activity-panel">
-          <h2>Aktivitas Terbaru <span>(contoh)</span></h2>
-          <div className="staff-activity-list">{staffActivities.map((activity) => (
-            <article className="staff-activity-item" key={activity.title}>
-              <span className="staff-activity-check"><Check size={14} /></span>
-              <div><strong>{activity.title}</strong><p>{activity.description}</p><small>{activity.time}</small></div>
+          <h2>Aktivitas Terbaru</h2>
+          {aktivitas.status === 'galat' && <div className="staff-notice error" role="alert"><AlertCircle size={16} /><span>{aktivitas.pesan}</span></div>}
+          {/* Aktivitas yang perlu diperhatikan (perbaikan, penolakan, draf dikembalikan) diberi ikon dan warna berbeda. */}
+          <div className="staff-activity-list">{aktivitas.data.map((item) => (
+            <article className="staff-activity-item" key={item.id}>
+              <span className={`staff-activity-check${item.perhatian ? ' perhatian' : ''}`}>{item.perhatian ? <Undo2 size={13} /> : <Check size={14} />}</span>
+              <div><strong>{item.judul}</strong><p>{item.keterangan}</p><small>{waktuRelatif(item.waktu)}</small></div>
             </article>
           ))}</div>
+          {aktivitas.status === 'memuat' && <p className="staff-chart-caption">Memuat aktivitas...</p>}
+          {aktivitas.status === 'siap' && aktivitas.data.length === 0 && <p className="staff-chart-caption">Belum ada aktivitas pengajuan.</p>}
         </section>
         <section className="staff-panel staff-services-panel">
           <h2>Pengajuan per Jenis Layanan <span>(bulan ini)</span></h2>

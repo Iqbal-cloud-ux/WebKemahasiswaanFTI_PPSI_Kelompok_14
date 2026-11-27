@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Camera, CheckCircle2, Eye, EyeOff, LockKeyhole, X } from 'lucide-react'
-import { bacaHasil, hapusFotoProfilRequest, ubahFotoProfilRequest, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
+import { bacaHasil, hapusFotoProfilRequest, simpanTokenBaru, ubahFotoProfilRequest, ubahKataSandiRequest, ubahKontakRequest } from '../../services/api.js'
 import { teksSemester } from '../../utils/semester.js'
 import { usePesanOtomatis } from '../../hooks/usePesanOtomatis.js'
 import { tandaiSalah } from '../../utils/validasiForm.js'
@@ -87,8 +87,8 @@ export function ProfilMahasiswaPage({ user, onUpdateUser }) {
     }
     setSaving(true)
     try {
-      await bacaHasil(await ubahKataSandiRequest({ kata_sandi_lama: currentPassword, kata_sandi_baru: newPassword }))
-      setNotice({ type: 'success', message: 'Kata sandi berhasil diubah. Gunakan kata sandi baru saat masuk berikutnya.' })
+      simpanTokenBaru(await bacaHasil(await ubahKataSandiRequest({ kata_sandi_lama: currentPassword, kata_sandi_baru: newPassword })))
+      setNotice({ type: 'success', message: 'Kata sandi berhasil diubah. Sesi di perangkat lain sudah diakhiri.' })
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
